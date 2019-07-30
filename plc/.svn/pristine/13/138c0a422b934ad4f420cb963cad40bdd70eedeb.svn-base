@@ -1,0 +1,54 @@
+<div class="rows_input">
+	<div style="border: 1px solid #CCCCCC;padding: 5px;margin: 0px 7px;background-color: #ffffff;">
+        <table style="width: 100%;" border="0">
+            <tbody>
+                <tr>
+                    <td width="20%">No UPB</td>
+                    <td>:</td>
+                    <td width="80%">
+                    	<?php echo $dataUPB['vupb_nomor'] ?>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td width="20%">Tanggal</td>
+                    <td>:</td>
+                     <td><?php echo $dataUPB['ttanggal'] ?></td>
+                </tr>
+
+                <tr>
+                    <td width="20%">Nama UPB</td>
+                    <td>:</td>
+                    <td width="80%">
+                    	<?php echo $dataUPB['vupb_nama'] ?>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td width="20%">Nama Generik</td>
+                    <td>:</td>
+                    <td width="80%">
+                        <?php echo $dataUPB['vgenerik'] ?>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td width="20%">Team Busdev</td>
+                    <td>:</td>
+                    <td width="80%">
+                        <?php echo $dataUPB['timBD'] ?>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td width="20%">Team Marketing</td>
+                    <td>:</td>
+                     <td>
+                     	<?php echo $dataUPB['timMKT'] ?>
+                     </td>
+                </tr>
+
+            </tbody>
+        </table>
+     </div>
+ </div>

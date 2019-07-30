@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="test_subreport" language="groovy" pageWidth="802" pageHeight="555" orientation="Landscape" columnWidth="802" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+	<parameter name="iupb_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[0]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select rm.vnama, upk.ibobot, upk.vsatuan, upk.vketerangan from plc2.plc2_upb_komposisi upk 
+   inner join plc2.plc2_raw_material rm on rm.raw_id=upk.raw_id where upk.iupb_id=$P{iupb_id}]]>
+	</queryString>
+	<field name="vnama" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ibobot" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vsatuan" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vketerangan" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<group name="vnama">
+		<groupExpression><![CDATA[$F{vnama}]]></groupExpression>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<columnHeader>
+		<band height="21" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="1" width="140" height="20" backcolor="#6699FF"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="249" y="1" width="129" height="20" backcolor="#6699FF"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="190" y="1" width="59" height="20" backcolor="#6699FF"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="140" y="1" width="50" height="20" backcolor="#6699FF"/>
+			</rectangle>
+			<staticText>
+				<reportElement x="249" y="2" width="129" height="18" backcolor="#3366FF"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Keterangan]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="189" y="1" width="59" height="20" backcolor="#3366FF"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Satuan]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="140" y="0" width="50" height="21" backcolor="#3366FF"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Kekuatan]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="0" width="140" height="20" backcolor="#3366FF"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Bahan]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="21" splitType="Stretch">
+			<rectangle>
+				<reportElement x="190" y="0" width="59" height="20"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="0" y="0" width="140" height="20"/>
+			</rectangle>
+			<textField>
+				<reportElement x="0" y="0" width="140" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{vnama}]]></textFieldExpression>
+			</textField>
+			<rectangle>
+				<reportElement x="249" y="0" width="129" height="20"/>
+			</rectangle>
+			<textField>
+				<reportElement x="249" y="1" width="129" height="19"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{vketerangan}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="190" y="0" width="58" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{vsatuan}]]></textFieldExpression>
+			</textField>
+			<rectangle>
+				<reportElement x="140" y="0" width="50" height="20"/>
+			</rectangle>
+			<textField>
+				<reportElement x="141" y="1" width="50" height="19"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression class="java.lang.Integer"><![CDATA[$F{ibobot}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band splitType="Stretch"/>
+	</pageFooter>
+</jasperReport>

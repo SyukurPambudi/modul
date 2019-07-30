@@ -1,0 +1,25 @@
+<?php 
+	$grid=str_replace("_".$field, "", $id);
+    $iupb_id=isset($dataHead["iupb_id"])?$dataHead["iupb_id"]:"0";
+    $iappbusdev_prareg=isset($dataHead["iappbusdev_prareg"])?$dataHead["iappbusdev_prareg"]:"0";
+    $get=$this->input->get();
+?>
+<script>
+    <?php
+       if($iupb_id!="0" && $iappbusdev_prareg==2){?>
+            $("#<?php echo $id ?>").parent().parent().show();
+    <?php }else{ ?>
+        $("#<?php echo $id ?>").parent().parent().hide();
+    <?php } ?>
+
+    $("#<?php echo $id ?>").change(function(){
+        var v = $(this).val();
+        if(v=="1"){
+            $(this).parent().parent().next().show();
+        }else{
+            $(this).parent().parent().next().next().hide();
+            $(this).parent().parent().next().hide();
+
+        }
+    });
+</script>

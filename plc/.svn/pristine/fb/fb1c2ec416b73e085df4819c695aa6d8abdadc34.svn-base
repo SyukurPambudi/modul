@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="report_kil_upi" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="bfcf8dd6-e9fb-40fb-8ecb-bf3b02fa19f7">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="iupi_id" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT
+     daftar_upi.`vNo_upi` AS daftar_upi_vNo_upi,
+     daftar_upi.`vNama_usulan` AS daftar_upi_vNama_usulan
+
+FROM
+     `daftar_upi` daftar_upi
+WHERE
+      daftar_upi.`iStatusKill` = 1
+AND
+      daftar_upi.`iupi_id` = $P{iupi_id}]]>
+	</queryString>
+	<field name="daftar_upi_vNo_upi" class="java.lang.String"/>
+	<field name="daftar_upi_vNama_usulan" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="52" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="16" width="555" height="20" uuid="66285b1a-f61e-4272-a8b7-25cb71a4fdaa"/>
+				<textElement textAlignment="Center">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Report Kill UPI]]></text>
+			</staticText>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="20" splitType="Stretch">
+			<rectangle>
+				<reportElement x="54" y="0" width="25" height="20" backcolor="#CCFFFF" uuid="326a73e1-3f18-41e0-901b-8644f949b82e"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="80" y="0" width="182" height="20" backcolor="#CCFFFF" uuid="d6c78d70-5070-4369-9518-2934963a88ab"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="262" y="0" width="227" height="20" backcolor="#CCFFFF" uuid="e83d05b2-79a8-4ccb-a7a6-4e7601937524"/>
+			</rectangle>
+			<staticText>
+				<reportElement x="271" y="0" width="218" height="20" uuid="a53938cd-8b38-4658-b46b-c9c74fd556f0"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Nama Usulan]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="81" y="0" width="182" height="20" backcolor="#CCFFFF" uuid="49258436-c3c8-4199-b0b6-b120aeb31c82"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[NO UPI]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="53" y="0" width="26" height="20" backcolor="#CCFFFF" uuid="0b85828e-4b26-493c-8f69-8fd5c218201f"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[NO]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<rectangle>
+				<reportElement x="54" y="0" width="26" height="20" uuid="ac955145-1351-4643-8ed8-78fdf4a67328"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="80" y="0" width="182" height="20" uuid="0d53a81c-4bf3-4e89-a5c9-c70ffeab7c21"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="262" y="0" width="227" height="20" uuid="cb23629e-0003-4907-b15c-f982ff8b153f"/>
+			</rectangle>
+			<textField>
+				<reportElement x="54" y="0" width="25" height="20" uuid="8fd66af6-ce9e-4a70-8f2e-13a46e6001ab"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$V{COLUMN_COUNT}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="91" y="0" width="171" height="20" uuid="545e28ea-2122-40e8-be55-1e57c68dec9c"/>
+				<textElement verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{daftar_upi_vNo_upi}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="271" y="0" width="208" height="20" uuid="d93a6baf-79f5-4a74-9e7c-f6e2142aa1e8"/>
+				<textElement verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{daftar_upi_vNama_usulan}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="9" splitType="Stretch"/>
+	</pageFooter>
+	<summary>
+		<band height="6" splitType="Stretch"/>
+	</summary>
+</jasperReport>

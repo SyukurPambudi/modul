@@ -1,0 +1,783 @@
+<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+class V3_m_reg extends CI_Model {
+
+	function __construct() {
+	    parent::__construct();
+	    $this->dbset = $this->load->database('plc0',false, true);
+		$this->user = $this->auth->user();
+	}
+
+	function updateUploadFile($filejenis='',$type='',$dataretu=array(),$iupb_id=0){
+        $filterfield=array("ma.filename='".$filejenis."'");
+		$datafield=$this->getDetailFiles($filterfield)->row_array();
+
+		$isPD=$datafield['isPD']>0?1:0;
+		$ibk=$datafield['ibk']>0?1:0;
+		$filepath='path'.$filejenis;
+		$pkfilecoars='pk'.$filejenis;
+		$tbfile='tb'.$filejenis;
+		$fieldupload='fupload'.$filejenis;
+		$id=$this->getAnotherUPB($datafield["fieldheader"],$iupb_id);
+		$fileketerangan=$dataretu[$filejenis]['fileketerangan'];
+		$istatus_upload=$dataretu[$filejenis]['istatus_upload'];
+		$iconfirm_reg_upload=$dataretu[$filejenis]['iconfirm_reg_upload'];
+        $tKetRevQA_upload=$dataretu[$filejenis]['tKetRevQA_upload'];
+        $sqldmf=array();
+		if (isset($_FILES['fileupload_local_reg_'.$filejenis])){
+			$i=0;
+			foreach ($_FILES['fileupload_local_reg_'.$filejenis]["error"] as $key => $error) {	
+				if ($error == UPLOAD_ERR_OK) {
+					$tmp_name = $_FILES['fileupload_local_reg_'.$filejenis]["tmp_name"][$key];
+					$name =$_FILES['fileupload_local_reg_'.$filejenis]["name"][$key];
+					$data['filename'] = $name;
+                    $data['dInsertDate'] = date('Y-m-d H:i:s');
+                    $now_u = date('Y_m_d__H_i_s');
+                    $name_generate = $i.'__'.$now_u.'__'.$name;
+					if(move_uploaded_file($tmp_name, $datafield['filepath']."/".$id."/".$name_generate)) {
+                        $tKetRevQA_upload_nilai=isset($tKetRevQA_upload[$i])?$tKetRevQA_upload[$i]:'';
+						if($ibk==1){
+							$ijenisbk_upload=$dataretu[$filejenis]['ijenisbk_upload'];
+							$sqldmf[] = "INSERT INTO plc2.group_file_upload(iM_modul_fileds, idHeader_File, vFilename,vFilename_generate ,dCreate, ijenis_bk_id, tKeterangan, cCreate, istatus, iconfirm_busdev, tKetRevQA) 
+								VALUES (".$datafield['iM_modul_fileds'].",".$id.",'".$data['filename']."','".$name_generate."','".$data['dInsertDate']."','".$ijenisbk_upload[$i]."','".$fileketerangan[$i]."','".$this->user->gNIP."','".$istatus_upload[$i]."','".$iconfirm_reg_upload[$i]."','".$tKetRevQA_upload_nilai."')";
+						}else{
+							$sqldmf[] = "INSERT INTO plc2.group_file_upload(iM_modul_fileds, idHeader_File, vFilename,vFilename_generate ,dCreate, tKeterangan, cCreate, istatus, iconfirm_busdev, tKetRevQA)
+								VALUES (".$datafield['iM_modul_fileds'].",".$id.",'".$data['filename']."','".$name_generate."','".$data['dInsertDate']."','".$fileketerangan[$i]."','".$this->user->gNIP."','".$istatus_upload[$i]."','".$iconfirm_reg_upload[$i]."','".$tKetRevQA_upload_nilai."')";
+						}
+						$i++;	
+					}
+					else{
+						echo "Upload ke folder gagal";	
+					}
+				}
+			}
+			foreach($sqldmf as $qdmf) {
+				try {
+					$this->dbset->query($qdmf);
+				}catch(Exception $e) {
+					die($e);
+				}
+			}	
+		}
+	}
+
+	function updateBeforeUpload($filejenis='',$type=''){
+		$post=$this->input->post();
+		$get=$this->input->get();
+		$isUpload = $this->input->get('isUpload');
+		$lastId=$this->input->get('lastId');
+
+		$filterfield=array("ma.filename='".$filejenis."'");
+		$datafield=$this->getDetailFiles($filterfield)->row_array();
+
+		$isPD=$datafield['isPD']>0?1:0;
+		$isPackdev=$datafield['isPackdev']>0?1:0;
+
+		$pathjenis='path'.$filejenis;
+		$pkjenis='pk'.$filejenis;
+		$tbjenis='tb'.$filejenis;
+		$pkdjenis='pkd'.$filejenis;
+		$dupdatedjenis='fdupdate'.$filejenis;
+		$cupdatedjenis='fcupdate'.$filejenis;
+
+		$iupb_id=$post['v3_cek_dokumen_reg_iupb_id'];
+		$id=$this->getAnotherUPB($datafield['fieldheader'],$iupb_id);
+		$pathjenisfix = realpath($datafield['filepath']);
+		if(!file_exists($pathjenisfix."/".$id)){
+			if (!mkdir($pathjenisfix."/".$id, 0777, true)) { //id review
+				die('Failed upload, try again - '.$filejenis.'!');
+			}
+		}
+		$fileketeranganmain = array();
+		$istatusmain = array();
+		$iconfirmreg = array();
+		$iconfirm_reg_upload = array();
+		$istatusmain_upload = array();
+		$ijenisbk = array();
+		$ijenisbk_upload = array();
+		$tKetRevQA = array();
+		$tKetRevQA_upload = array();
+		$fileidmain='';
+		foreach($_POST as $key=>$value) {
+			if($key == 'v3_cek_dokumen_reg_'.$filejenis.'_istatus'){
+				foreach($value as $y=>$u) {
+					if($y!=0){
+						$istatusmain[$y]=$u[0];
+					}else{
+						$istatusmain_upload[]=$u;
+					}
+				}
+			}
+			if($key == 'v3_cek_dokumen_reg_'.$filejenis.'_iconfirm_reg'){
+				foreach($value as $y=>$u) {
+					if($y!=0){
+						$iconfirmreg[$y]=$u[0];
+					}else{
+						$iconfirm_reg_upload[]=$u;
+					}
+				}
+			}
+			if($key == 'v3_cek_dokumen_reg_'.$filejenis.'_tKetRevQA'){
+				foreach($value as $y=>$u) {
+					if($y!=0){
+						$tKetRevQA[$y]=$u[0];
+					}else{
+						$tKetRevQA_upload[]=$u;
+					}
+				}
+			}
+			if($key == 'file_keterangan_local_reg_'.$filejenis){
+				foreach($value as $y=>$u) {
+					$fileketeranganmain[] = $u;
+				}
+			}
+			if($key == 'v3_cek_dokumen_reg_'.$filejenis.'_ijenis_bk_id'){
+				foreach($value as $y=>$u) {
+					if($y!=0){
+						$ijenisbk[$y]=$u[0];
+					}else{
+						$ijenisbk_upload[]=$u;
+					}
+				}
+			}
+			if ($key == 'ifile_'.$filejenis) {
+				$i=0;
+				foreach($value as $k=>$v) {
+					$ifile_filemain[$k] = $v;
+					if($i==0){
+						$fileidmain .= "'".$v."'";
+					}else{
+						$fileidmain .= ",'".$v."'";
+					}
+					$i++;
+				}
+			}
+		}
+		/*Cek Confirm untuk upload*/
+		if(count($fileketeranganmain)>=1){
+			if(count($iconfirm_reg_upload)>=1){
+				$iconfirm_reg_upload=$iconfirm_reg_upload[0];
+			}
+			if(count($istatusmain_upload)>=1){
+				$istatusmain_upload=$istatusmain_upload[0];
+			}
+			if(count($ijenisbk_upload)>=1){
+				$ijenisbk_upload=$ijenisbk_upload[0];
+			}
+			if(count($tKetRevQA_upload)>=1){
+				$tKetRevQA_upload=$tKetRevQA_upload[0];
+			}
+			foreach ($fileketeranganmain as $kketmain => $vketmain) {
+				if(!isset($iconfirm_reg_upload[$kketmain])){
+					if($type!='BD'){
+						$iconfirm_reg_upload[$kketmain]=0;
+					}
+				}
+				if(!isset($istatusmain_upload[$kketmain])){
+					if($type=='BD'){
+						$istatusmain_upload[$kketmain]=1;
+					}
+				}
+				if(isset($ijenisbk_upload[$kketmain])){
+					$ijenisbk_upload[$kketmain]=$ijenisbk_upload[$kketmain];
+				}
+				if(isset($tKetRevQA_upload[$kketmain])){
+					$tKetRevQA_upload[$kketmain]=$tKetRevQA_upload[$kketmain];
+				}
+			}
+		}
+		$pathjenis='path'.$filejenis;
+		$pkjenis='pk'.$filejenis;
+		$tbjenis='tb'.$filejenis;
+		$pkdjenis='pkd'.$filejenis;
+		$dupdatedjenis='fdupdate'.$filejenis;
+		$cupdatedjenis='fcupdate'.$filejenis;
+		/*Update delete file*/
+		if($fileidmain!=''){
+			$tgl= date('Y-m-d H:i:s');
+			$sql1="update plc2.group_file_upload set iDeleted=1, dUpdate='".$tgl."', cUpdate='".$this->user->gNIP."' where idHeader_File='".$id."' and iM_modul_fileds = ".$datafield['iM_modul_fileds']." and iFile not in (".$fileidmain.")";
+			$this->dbset->query($sql1);
+		}elseif($fileidmain==""){
+			$tgl= date('Y-m-d H:i:s');
+			$sql1="update plc2.group_file_upload set iDeleted=1, dUpdate='".$tgl."', cUpdate='".$this->user->gNIP."' where idHeader_File='".$id."' and iM_modul_fileds = ".$datafield['iM_modul_fileds']."";
+			$this->dbset->query($sql1);
+		}
+		/*Update istatus oleh qa*/
+		if(count($istatusmain)>=1){
+			foreach ($istatusmain as $kmain => $vmain) {
+				$sqlup="update plc2.group_file_upload set istatus=".$vmain." where idHeader_File='".$id."' and iM_modul_fileds = ".$datafield['iM_modul_fileds']." and iFile=".$kmain;
+				$this->dbset->query($sqlup);
+			}
+		}
+		if(count($iconfirmreg)>=1){
+			foreach ($iconfirmreg as $kmain => $vmain) {
+				$sqlupp="update plc2.group_file_upload set iconfirm_busdev=".$vmain." where idHeader_File='".$id."' and iM_modul_fileds = ".$datafield['iM_modul_fileds']." and iFile=".$kmain;
+				$this->dbset->query($sqlupp);
+			}
+		}
+		if(count($ijenisbk)>=1){
+			foreach ($ijenisbk as $kmain => $vmain) {
+				$sqluppp="update plc2.group_file_upload set ijenis_bk_id=".$vmain." where idHeader_File='".$id."'  and iM_modul_fileds = ".$datafield['iM_modul_fileds']." and iFile=".$kmain;
+				$this->dbset->query($sqluppp);
+			}
+		}
+		if(count($tKetRevQA)>=1){
+			foreach ($tKetRevQA as $kmain => $vmain) {
+				$sqluppp="update plc2.group_file_upload set tKetRevQA='".$vmain."' where idHeader_File='".$id."'  and iM_modul_fileds = ".$datafield['iM_modul_fileds']." and iFile=".$kmain;
+				$this->dbset->query($sqluppp);
+			}
+		}
+
+		$dataret['fileketerangan']=$fileketeranganmain;
+		$dataret['istatus_upload']=$istatusmain_upload;
+		$dataret['iconfirm_reg_upload']=$iconfirm_reg_upload;
+		$dataret['ijenisbk_upload']=$ijenisbk_upload;
+		$dataret['tKetRevQA_upload']=$tKetRevQA_upload;
+		return $dataret;
+	}
+
+	function getDoneOnUpdateBox($field='',$rowData=array(),$n=0){
+		$filterfield=array("ma.filename='".$field."'");
+		$datafield=$this->getDetailFiles($filterfield)->row_array();
+		$tbfield='tb'.$field;
+		$pkfield='pk'.$field;
+		$dgrid['isPD']=$datafield['isPD']>0?1:0;
+		$dgrid['isPackdev']=$datafield['isPackdev']>0?1:0;
+		$dgrid['field']=$field;
+		$dgrid['id']=$field;
+		$dgrid['ibk']=$datafield['ibk'];
+		$dgrid['rowData']=$rowData;
+		$dgrid['get']=$this->input->get();
+		$dgrid['caption']='MODULE '.$datafield['modulename'];
+		$id=$this->getAnotherUPB($datafield['fieldheader'],$rowData['iupb_id']);
+		$dgrid['nilaiid']=$id;$type="NONOOO";
+		if($this->auth->is_manager()){
+			$x=$this->auth->dept();
+			$manager=$x['manager'];
+			if(in_array('BD', $manager)){
+				$type='BD';
+			}elseif(in_array('PD', $manager)){
+				$type='PD';
+			}elseif(in_array('QA', $manager)){
+				$type='QA';
+			}elseif(in_array('PAC', $manager)){
+				$type='PAC';
+			}else{$type='';}
+			$sa="MAN";
+
+		}
+		else{
+			$x=$this->auth->dept();
+			if(isset($x['team'])){
+				$team=$x['team'];
+				if(in_array('BD', $team)){
+					$type='BD';
+				}elseif(in_array('PD', $team)){
+					$type='PD';
+				}elseif(in_array('QA', $team)){
+					$type='QA';
+				}elseif(in_array('PAC', $team)){
+					$type='PAC';
+				}
+				else{$type='';}
+			}
+		}
+		/*Cek Untuk Done*/
+		$dgrid['cekdone']=0;
+		$sqlc="select * from plc2.group_file_upload where iDeleted=0 and iconfirm_busdev in (0,3) and idHeader_File=".$id.' and iM_modul_fileds='.$datafield['iM_modul_fileds'];
+		$dgrid['cekdone']=$this->dbset->query($sqlc)->num_rows();
+		$dgrid['ddd']=0;
+		$sqlc2="select * from plc2.group_file_upload where iDeleted=0 and iDone!=1 and idHeader_File=".$id.' and iM_modul_fileds='.$datafield['iM_modul_fileds'];
+		$dgrid['ddd']=$this->dbset->query($sqlc2)->num_rows();
+		$dgrid['type']=$type;
+		$sqlcc="select * from plc2.group_file_upload where iDeleted=0 and idHeader_File=".$id.' and iM_modul_fileds='.$datafield['iM_modul_fileds'];
+		$nn=$this->dbset->query($sqlcc);
+		if($nn->num_rows()==0){
+			//if($type!='QA'){
+				$dgrid['ddd']=1;
+				$dgrid['cekdone']=999;
+			//}
+		}
+
+
+
+		/*Jenis BK*/
+		$dgrid['arr3']=$this->getfieldBK();
+
+		return $dgrid;
+	}
+
+	function get_v3_cek_dokumen_reg_filemain(){
+		$type="";
+ 		if($this->auth->is_manager()){
+			$x=$this->auth->dept();
+			$manager=$x['manager'];
+			if(in_array('BD', $manager)){
+				$type='BD';
+			}elseif(in_array('PD', $manager)){
+				$type='PD';
+			}elseif(in_array('QA', $manager)){
+				$type='QA';
+			}elseif(in_array('PAC', $manager)){
+				$type='PAC';
+			}
+			else{$type='';}
+		}
+		else{
+			$x=$this->auth->dept();
+			if(isset($x['team'])){
+				$team=$x['team'];
+				if(in_array('BD', $team)){
+					$type='BD';
+				}elseif(in_array('PD', $team)){
+					$type='PD';
+				}elseif(in_array('QA', $team)){
+					$type='QA';
+				}elseif(in_array('PAC', $team)){
+					$type='PAC';
+				}
+				else{$type='';}
+			}
+		}
+    	$post=$this->input->get();
+		$field=$this->input->get('field');
+
+		$filterfield=array("ma.filename='".$field."'");
+		$datafield=$this->getDetailFiles($filterfield)->row_array();
+
+		$tbfield='tb'.$field;
+		$pkfield='pk'.$field;
+		$pathfield='path'.$field;
+		$rselfield='rsel'.$field;
+		$filenamefield='filename'.$field;
+		$pkdfield='pkd'.$field;
+		$idpkd=$datafield['fielddetail'];
+
+		$id=$this->getAnotherUPB($datafield['fieldheader'],$post['id']);
+
+    	/*Untuk Master Data*/
+    	$sql_data="select * from plc2.group_file_upload p where p.iDeleted=0 and p.idHeader_File=".$id." and p.iM_modul_fileds=".$datafield['iM_modul_fileds'];
+    	
+        $rsel=array('vFilename','iconfirm_busdev','istatus','tKetRevQA','tKeterangan','iact');
+        if($datafield['ibk']==1){
+           $rsel=array('vFilename','iconfirm_busdev','istatus','tKetRevQA','ijenis_bk_id','tKeterangan','iact');
+        }
+		if (($key = array_search("iact",$rsel)) !== false) {
+			if($post['act']=="view"){
+		    	unset($rsel[$key]);
+		    }
+		}
+		$idpk='id';
+		$vfilename=$datafield['ffilename'];
+		$idpkheader=$datafield['fieldheader'];
+		$thisfilepath=$datafield['filepath'];
+
+		$q=$this->db->query($sql_data);
+
+		$data = new StdClass;
+		$data->records=$q->num_rows();
+		$i=0;
+		foreach ($q->result() as $k) {
+			$n=$i+1;
+			$data->rows[$i]['id']=$n;
+			$z=0;
+			foreach ($rsel as $dsel => $vsel) {
+				$value=$k->vFilename_generate;
+				$id=$k->idHeader_File;
+				$linknya = 'No File';
+				if($value != '') {
+					if (file_exists('./'.$thisfilepath.'/'.$id.'/'.$value)) {
+						$link = base_url().'processor/plc/v3/cek/dokumen/reg?action=download&id='.$id.'&file='.$value.'&path='.$field;
+						$linknya = '<a class="ui-button-text" href="javascript:;" onclick="window.location=\''.$link.'\'">'.$k->vFilename.'</a>';
+					}else {
+						$linknya = $k->vFilename;
+					}
+				}
+				$linknya=$linknya.'<input type="hidden" class="cek_num_row_'.$field.'" value=1 />';
+				if($vsel=="iact"){
+					if($post['act']!="view"){
+						if($type=="BD" || $type=="QA"){
+							if($k->iconfirm_busdev==0||$k->iconfirm_busdev==3){
+								$dataar[$dsel]='<input type="hidden" class="num_rows_details_file_'.$field.'_edit" value="'.$n.'" /><button id="table_file_'.$field.'_details_edit_hapus" class="ui-button-text icon_hapus" style="width:75px" onclick="javascript:hapus_row_details_file_'.$field.'_edit('.$n.')" type="button">Hapus</button><input type="hidden" name="ifile_'.$field.'[]" value="'.$k->iFile.'"';
+							}else{
+								$dataar[$dsel]='<input type="hidden" class="num_rows_details_file_'.$field.'_edit" value="'.$n.'" /><input type="hidden" name="ifile_'.$field.'[]" value="'.$k->iFile.'" />';
+							}
+						}else{
+							/*$isPD=$datafield['isPD']>0?1:0;*/
+							$isPD=$datafield['isPD']>0?1:0;
+							$isPackdev=$datafield['isPackdev']>0?1:0;
+							if($type=="PD" && ($k->iconfirm_busdev==0||$k->iconfirm_busdev==3) && $isPD==1){
+								$dataar[$dsel]='<input type="hidden" class="num_rows_details_file_'.$field.'_edit" value="'.$n.'" /><button id="table_file_'.$field.'_details_edit_hapus" class="ui-button-text icon_hapus" style="width:75px" onclick="javascript:hapus_row_details_file_'.$field.'_edit('.$n.')" type="button">Hapus</button><input type="hidden" name="ifile_'.$field.'[]" value="'.$k->iFile.'"';
+							}elseif($type=="PAC" && ($k->iconfirm_busdev==0||$k->iconfirm_busdev==3) && $isPackdev==1){
+								$dataar[$dsel]='<input type="hidden" class="num_rows_details_file_'.$field.'_edit" value="'.$n.'" /><button id="table_file_'.$field.'_details_edit_hapus" class="ui-button-text icon_hapus" style="width:75px" onclick="javascript:hapus_row_details_file_'.$field.'_edit('.$n.')" type="button">Hapus</button><input type="hidden" name="ifile_'.$field.'[]" value="'.$k->iFile.'"';
+							}else{
+								$dataar[$dsel]='<input type="hidden" class="num_rows_details_file_'.$field.'_edit" value="'.$n.'" /><input type="hidden" name="ifile_'.$field.'[]" value="'.$k->iFile.'" />';
+							}
+						}
+					}else{
+						$dataar[$dsel]='<input type="hidden" class="num_rows_details_file_'.$field.'_edit" value="'.$n.'" />';
+					}
+				}elseif($vsel=="iconfirm_busdev"){
+					$dis="";
+					if($type=="BD"){
+						if($k->iDone==1){
+							$dis="Disabled='disabled'";
+						}
+					}else{
+						$dis="Disabled='disabled'";
+					}
+					if($k->iDone==1){
+						$dis="Disabled='disabled'";
+					}
+					$arr=array(0=>"Haven't been checked",1=>"Confirm", 2=>"Un Used", 3=>"Un Confirm");
+					$opt="<select id='v3_cek_dokumen_reg_".$field."_iconfirm_reg_".$n."' name='v3_cek_dokumen_reg_".$field."_iconfirm_reg[".$k->iFile."][]' ".$dis." >";
+					foreach ($arr as $karr => $varr) {
+						$sel=$karr==$k->{$vsel}?'selected':'';
+						$opt.="<option value='".$karr."' ".$sel.">".$varr."</option>";
+					}
+					$opt.="</select>";
+					$dataar[$z]=$opt;
+				}elseif($vsel=="istatus"){
+					$dis="";
+					if($type!="QA"){
+						$dis="Disabled='disabled'";
+					}else{
+						if($k->iconfirm_busdev==1||$k->iconfirm_busdev==2){
+							$dis="Disabled='disabled'";
+						}
+					}
+					if($k->iDone==1){
+						$dis="Disabled='disabled'";
+					}
+					$arr=array(0=>"Draft",1=>"Finish");
+					$opt="<select id='v3_cek_dokumen_reg_".$field."_istatus_".$n."' name='v3_cek_dokumen_reg_".$field."_istatus[".$k->iFile."][]' ".$dis." >";
+					foreach ($arr as $karr => $varr) {
+						$sel=$karr==$k->{$vsel}?'selected':'';
+						$opt.="<option value='".$karr."' ".$sel.">".$varr."</option>";
+					}
+					$opt.="</select>";
+					$dataar[$z]=$opt;
+				}elseif($vsel=="ijenis_bk_id"){
+					$row3select = $this->getfieldBK();
+					$dis="";
+					$filterfield=array("ma.filename='".$field."'");
+					$isPD=$datafield['isPD']>0?1:0;
+					$isPackdev=$datafield['isPackdev']>0?1:0;
+					/*if($type!="QA"){
+						$dis="Disabled='disabled'";
+					}else{
+						if($k->iconfirm_busdev==1||$k->iconfirm_busdev==2){
+							$dis="Disabled='disabled'";
+						}
+					}*/
+					/* if($isPackdev==1){
+						if($type!="QA"&&$type!="BD"&&$type!="PD"){
+
+						}else{
+							$dis="Disabled='disabled'";
+						}
+					}else{
+						$dis="Disabled='disabled'";
+					} */
+
+					if($k->iDone==1){
+						$dis="Disabled='disabled'";
+					}
+					$now="<select id='v3_cek_dokumen_reg_".$field."_ijenis_bk_id_".$n."' name='v3_cek_dokumen_reg_".$field."_ijenis_bk_id[".$k->iFile."][]' ".$dis." >";
+					foreach ($row3select as $kv => $vvv) {
+						$sel=$vvv['ijenis_bk_id']==$k->{$vsel}?'selected':'';
+						$now.="<option value='".$vvv['ijenis_bk_id']."' ".$sel.">".$vvv['itipe_bk']." > ".$vvv['vjenis_bk']."</option>";
+					}
+					$now.="</select>";
+					$dataar[$z]=$now;
+				}elseif($vsel=="tKetRevQA"){
+					$row3select = $this->getfieldBK();
+					$dis="";
+					$filterfield=array("ma.filename='".$field."'");
+					$isPD=$datafield['isPD']>0?1:0;
+					$isPackdev=$datafield['isPackdev']>0?1:0;
+
+					if($type!="QA"){
+						$dis="Disabled='disabled'";
+					}
+
+					if($k->iDone==1){
+						$dis="Disabled='disabled'";
+					}
+					$now="<textarea id='v3_cek_dokumen_reg_".$field."_tKetRevQA_".$n."' name='v3_cek_dokumen_reg_".$field."_tKetRevQA[".$k->iFile."][]' style='width: 240px; height: 50px;' ".$dis.">".$k->{$vsel}."</textarea>";
+					$dataar[$z]=$now;
+				}elseif($vsel=='vFilename'){
+					$dataar[$z]=$linknya;
+				}else{
+					$dataar[$z]=$k->{$vsel};
+				}
+				$z++;
+			}
+			$data->rows[$i]['cell']=$dataar;
+			$i++;
+		}
+		return json_encode($data);
+    }
+
+    function getfieldBK(){
+    	$sql1 = "select mbk.ijenis_bk_id,mbk.vjenis_bk,
+							(case
+								when mbk.itipe_bk=1 then 'Primer'
+								when mbk.itipe_bk=2 then 'Sekunder'
+								else 'Tersier'
+							end) as itipe_bk, mbk.itipe_bk as idtipe_bk from plc2.plc2_master_jenis_bk mbk where mbk.ldeleted=0 
+							";
+		$return=$this->dbset->query($sql1)->result_array();
+		return $return;
+    }
+
+	function getAnotherUPB($field='iupb_id',$iupb_id,$n=0){
+		$ret=0;
+		switch ($field) {
+			case 'ifor_id':
+				$sql_lapori="select * from plc2.plc2_upb_formula where iupb_id=".$iupb_id." #and iFormula_process is not null 
+				and ldeleted=0 order by ifor_id DESC limit 1";
+				$q_lapori=$this->db->query($sql_lapori)->row_array();
+				$ret=isset($q_lapori[$field])?$q_lapori[$field]:0;
+				break;
+			case 'iprotokol_id':
+				$sql_lapori="select * from plc2.protokol_valpro where iupb_id=".$iupb_id." and lDeleted=0 order by iprotokol_id DESC limit 1";
+				$q_lapori=$this->db->query($sql_lapori)->row_array();
+				$ret=isset($q_lapori[$field])?$q_lapori[$field]:0;
+				break;
+			case 'isoi_id':
+				$sql_lapori="select * from plc2.plc2_upb_soi_fg fg where fg.iupb_id=".$iupb_id." and fg.ldeleted=0 order by fg.isoi_id DESC Limit 1";
+				$q_lapori=$this->db->query($sql_lapori)->row_array();
+				$ret=isset($q_lapori[$field])?$q_lapori[$field]:0;
+				break;
+			case 'ivalmoa_id':
+				$sql_lapori="select * from plc2.plc2_vamoa fg where fg.iupb_id=".$iupb_id." and fg.lDeleted=0 order by fg.ivalmoa_id DESC Limit 1";
+				$q_lapori=$this->db->query($sql_lapori)->row_array();
+				$ret=isset($q_lapori[$field])?$q_lapori[$field]:0;
+				break;
+			case 'ibk_id':
+			$sql_lapori="select * from plc2.plc2_upb_bahan_kemas bk where bk.iupb_id='".$iupb_id."'
+			and bk.ldeleted=0 and bk.ijenis_bk=1 order by bk.ibk_id DESC Limit 1";
+				$q_lapori=$this->db->query($sql_lapori)->row_array();
+				$ret=isset($q_lapori[$field])?$q_lapori[$field]:0;
+				break;
+			case 'isoibb_id':
+				$sql_lapori="select * from plc2.plc2_upb_soi_bahanbaku where iupb_id=".$iupb_id." and ldeleted=0 order by isoibb_id DESC Limit 1";
+				$q_lapori=$this->db->query($sql_lapori)->row_array();
+				$ret=isset($q_lapori[$field])?$q_lapori[$field]:0;
+				break;
+			case 'iprodpilot_id':
+				$sql_lapori="select * from plc2.plc2_upb_prodpilot
+				join plc2.plc2_upb_formula on plc2_upb_formula.ifor_id=plc2_upb_prodpilot.ifor_id
+				where plc2_upb_formula.iupb_id=".$iupb_id." and plc2_upb_prodpilot.ldeleted=0 order by iprodpilot_id DESC Limit 1";
+				$q_lapori=$this->db->query($sql_lapori)->row_array();
+				$ret=isset($q_lapori[$field])?$q_lapori[$field]:0;
+				break;
+			case 'ilpo_id':
+				$sql_lapori="select * from plc2.lpo where iupb_id=".$iupb_id." and ldeleted=0 order by ilpo_id DESC Limit 1";
+				$q_lapori=$this->db->query($sql_lapori)->row_array();
+				$ret=isset($q_lapori[$field])?$q_lapori[$field]:0;
+				if($ret==0){
+					$datainsert['iupb_id']=$iupb_id;
+					$datainsert['dCreate']=$this->user->gNIP;
+					$datainsert['cCreate']=date('Y-m-d H:i:s');
+					$this->db->insert('plc2.lpo',$datainsert);
+					$ret=$this->db->insert_id();
+				}
+				break;
+			case 'isoifg_id':
+				$sql_lapori="select * from plc2.soi_fg where iupb_id=".$iupb_id." and ldeleted=0 order by isoifg_id DESC Limit 1";
+				$q_lapori=$this->db->query($sql_lapori)->row_array();
+				$ret=isset($q_lapori[$field])?$q_lapori[$field]:0;
+				break;
+			case 'ivalidasi_id':
+				$sql_lapori="select * from plc2.validasi_proses where iupb_id=".$iupb_id." and lDeleted=0 order by ivalidasi_id DESC Limit 1";
+				$q_lapori=$this->db->query($sql_lapori)->row_array();
+				$ret=isset($q_lapori[$field])?$q_lapori[$field]:0;
+				break;
+			default:
+				$ret=$iupb_id;
+				break;
+		}
+		return $ret;
+	}
+
+
+
+	function download($filename) {
+		$this->load->helper('download');
+		$type=$_GET['path'];
+		$pname='path'.$type;
+
+		$filterfield=array("ma.filename='".$type."'");
+		$datafield=$this->getDetailFiles($filterfield)->row_array();
+
+		$name = $_GET['file'];
+		$id = $_GET['id'];
+		$path = file_get_contents('./'.$datafield['filepath'].'/'.$id.'/'.$name);	
+		force_download($name, $path);
+	}
+
+	function getDetailtable($team='PD',$iupb_id, $isrequired=0){
+		$isTeam='is'.$team;
+		$dupb=$this->getUPBDetails($iupb_id);
+		/*$iniTeam=$team=="PD"?"isPD":"isQA";*/
+		$iniTeam="isPD";
+		if($team=="QA"){
+			$iniTeam="isQA";
+		}elseif($team=="PAC"){
+			$iniTeam="isPackdev";
+		}else{
+			$iniTeam="isPD";
+		}
+		$and=$isrequired==1?"and de.irequired=1":"";
+		$filter=array('de.ikategori_id=4 and de.ijenisdok=2 and de.jenisplc=1 '.$and,'de.'.$iniTeam.'=1');
+		$row=$this->v3_m_reg->getDetailFiles($filter)->result_array();
+
+		$table=array();
+		$pktable=array();
+		$nitable=array();
+		$iM_modul_fileds=array();
+		$moduleFile=array();
+		foreach ($row as $kteam => $vteam) {
+			$table[$vteam["filename"]]=$vteam["filetable"];
+			$pktable[$vteam["filename"]]=$vteam["fieldheader"];
+			$moduleFile[$vteam["filename"]]=$vteam["modulename"]." - ".$vteam["labelform"];
+			$iM_modul_fileds[$vteam["filename"]]=$vteam["iM_modul_fileds"];
+			$nitable[$vteam["filename"]]=$this->getAnotherUPB($vteam["fieldheader"],$iupb_id);
+		}
+		$dataret['table']=$table;
+		$dataret['pktable']=$pktable;
+		$dataret['nitable']=$nitable;
+		$dataret['moduleFile']=$moduleFile;
+		$dataret['iM_modul_fileds']=$iM_modul_fileds;
+		return $dataret;
+	}	
+
+	function getDetailtableUse($post){
+		$table=array();
+		$pktable=array();
+		$nitable=array();
+		$caption=array();
+		$iupb_id=$post['iupb_id'];
+
+		$dupb=$this->getUPBDetails($iupb_id);
+		$filter=array('de.ikategori_id=4 and de.ijenisdok=2 and de.jenisplc=1');
+
+		$row=$this->m_reg->getDetailFiles($filter)->result_array();
+
+		foreach ($row as $kteam => $vteam) {
+			$table[$vteam['filename']]=$vteam['filetable'];
+			$pktable[$vteam['filename']]=$vteam['fieldheader'];
+			$caption[$vteam['filename']]=$vteam['captiondone'];
+			$nitable[$vteam['filename']]=$this->getAnotherUPB($vteam['fieldheader'],$iupb_id);
+		}
+		$dataret['table']=$table;
+		$dataret['pktable']=$pktable;
+		$dataret['nitable']=$nitable;
+		$dataret['caption']=$caption;
+		return $dataret;
+	}
+
+	function cek_dokumen_confirm($post){
+		$iupb_id=$post['iupb_id'];
+		$ii=0;
+
+		$dupb=$this->getUPBDetails($iupb_id);
+		$filter=array('de.ikategori_id=4 and de.ijenisdok=2 and de.jenisplc=1');
+		$row=$this->m_reg->getDetailFiles($filter)->result_array();
+
+		foreach ($row as $kteam => $vteam) {
+			$nitable=$this->getAnotherUPB($vteam['fieldheader'],$iupb_id);
+			$sqlc="select * from ".$vteam['filetable']." where (ldeleted is null or ldeleted=0) and iconfirm_busdev in (0,3) and ".$vteam['fieldheader']."=".$nitable;
+			if($this->dbset->query($sqlc)->num_rows()>=1){
+				$ii++;
+			}
+		}
+		return $ii;
+	}
+
+	function doneprocess(){
+		$post=$this->input->post();
+		$get=$this->input->get();
+		$nip = $this->user->gNIP;
+		$skg=date('Y-m-d H:i:s');
+		$field=$get['field'];
+		$updone = array();
+		$updone['iDone']=1;
+		$updone['dDoneDate']=$skg;
+		$updone['cDone']=$nip;
+		$tbname='tb'.$field;
+		$pkname='pk'.$field;
+		$captionname='caption'.$field;
+
+		$filterfield=array("ma.filename='".$field."'");
+		$datafield=$this->getDetailFiles($filterfield)->row_array();
+
+		$id=$this->getAnotherUPB($datafield['fieldheader'],$post['iupb_id']);
+		$this->dbset->where('iDeleted',0);
+		$this->dbset->where('idHeader_File',$id);
+		$this->dbset->where('iM_modul_fileds',$datafield['iM_modul_fileds']);
+		$this->dbset->update('plc2.group_file_upload',$updone);
+		$r = $get;
+		$r['status'] = TRUE;
+		$r['message'] = 'Done '.$datafield['captiondone'].' Success!';
+		return json_encode($r);
+	}
+
+	function getDetailFiles($array=array()){
+		$where="";
+		if(count($array)>0){
+			$where=" AND ";
+			$where.=implode(" AND ", $array);
+		}
+		$sql="select * from plc2.sys_detaildok de 
+			join plc2.sys_masterdok ma on ma.idmasterdok=de.idmasterdok
+			where de.ldeleted=0 and ma.ldeleted=0 and de.jenisplc=1 ".$where;
+		return $this->dbset->query($sql);
+	}
+
+	function getUPBDetails($iupb_id){
+		$this->dbset->where('iupb_id',$iupb_id);
+		$return=$this->dbset->get("plc2.plc2_upb")->row_array();
+		return $return;
+	}
+
+	function getEmployee($nip){
+		$row = $this->dbset->get_where('hrd.employee', array('cNip'=>$nip))->row_array();
+		return $row;
+	}
+
+	function insert_history_approve($iupb_id,$vmodule,$vtipe,$iapprove,$cnip,$get=array()){
+		$iCompanyId=isset($get['company_id'])?$get['company_id']:"";
+		$datainsert['iupb_id']=$iupb_id;
+		$datainsert['vmodule']=$vmodule;
+		$datainsert['vtipe']=$vtipe;
+		$datainsert['iapprove']=$iapprove;
+		$datainsert['cnip']=$cnip;
+		$datainsert['iCompanyId']=$iCompanyId;
+		$datainsert['tupdate']=date("Y-m-d H:i:s");
+		$ret="Failed";
+		if($this->dbset->insert("plc2.plc2_upb_approve",$datainsert)){
+			$ret="Success";
+		}
+		return $ret;
+	}
+
+
+	function cekApproval($iupb_id){//return 1="PD",2="Packdev",3=DuaDuanya
+		$upb=$this->getUPBDetails($iupb_id);
+		$getpack=array('isPackdev=1','ikategori_id='.$upb["ikategori_id"]);
+		$qpack=$this->getDetailFiles($getpack);
+		$getpd=array('isPD=1','ikategori_id='.$upb["ikategori_id"]);
+		$qpd=$this->getDetailFiles($getpd);
+		$nilai=0;
+		if($qpd->num_rows()>=1){
+			$nilai=$nilai+1;
+		}
+		if($qpack->num_rows()>=1){
+			$nilai=$nilai+2;
+		}
+		return $nilai;
+	}
+
+}

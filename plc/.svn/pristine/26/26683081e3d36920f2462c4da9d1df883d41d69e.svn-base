@@ -1,0 +1,2653 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="rpt_history_upb" language="groovy" pageWidth="6500" pageHeight="2380" orientation="Landscape" whenNoDataType="AllSectionsNoDetail" columnWidth="6500" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="5506"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="iupb_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[0]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="iteambusdev" class="java.lang.String">
+		<defaultValueExpression><![CDATA[4]]></defaultValueExpression>
+	</parameter>
+	<parameter name="iteampd" class="java.lang.String">
+		<defaultValueExpression><![CDATA[1]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select
+	#No UPB
+	p.iupb_id as ID,
+	p.iupb_id as iupb_id,
+	p.vupb_nomor  as vupb_nomor,
+	p.vupb_nama as vupb_nama,
+
+	#Approval Busdev
+	( SELECT(IF (p.iappbusdev = 2, concat (
+		'Approve',' Oleh: ',(select cnip from plc2.plc2_upb_approve where vmodule in ('AppUPB-BD','2471') and vtipe='BD' and iupb_id=ID and ldeleted=0 limit 1),
+		  ' Pada: ',(select tupdate from plc2.plc2_upb_approve where vmodule in ('AppUPB-BD','2471') and vtipe='BD' and iupb_id=ID and ldeleted=0 limit 1)
+		),
+				IF(p.iappbusdev = 1, concat (
+		'Reject',' Oleh: ',(select cnip from plc2.plc2_upb_approve where vmodule in ('AppUPB-BD','2471') and vtipe='BD' and iupb_id=ID and ldeleted=0 limit 1),
+		  ' Pada: ',(select tupdate from plc2.plc2_upb_approve where vmodule in ('AppUPB-BD','2471') and vtipe='BD' and iupb_id=ID and ldeleted=0 limit 1)
+		), '  ')
+				)
+			)
+	) as 'appbus',
+
+	#Approval Direksi
+	( SELECT(IF (p.iappdireksi = 2, concat (
+		'Approve',' Oleh: ',(select cnip from plc2.plc2_upb_approve where vmodule in ('AppUPB-DR','2471') and vtipe='DR' and iupb_id=ID and ldeleted=0 limit 1),
+		  ' Pada: ',(select tupdate from plc2.plc2_upb_approve where vmodule in ('AppUPB-DR','2471') and vtipe='DR' and iupb_id=ID and ldeleted=0 limit 1)
+		),
+				IF(p.iappdireksi = 1, concat (
+		'Reject',' Oleh: ',(select cnip from plc2.plc2_upb_approve where vmodule in ('AppUPB-DR','2471') and vtipe='DR' and iupb_id=ID and ldeleted=0 limit 1),
+		  ' Pada: ',(select tupdate from plc2.plc2_upb_approve where vmodule in ('AppUPB-DR','2471') and vtipe='DR' and iupb_id=ID and ldeleted=0 limit 1),
+		  ' Alasan: ',(select treason from plc2.plc2_upb_approve where vmodule in ('AppUPB-DR','2471') and vtipe='DR' and iupb_id=ID and ldeleted=0 limit 1)
+		), '  ')
+				)
+			)
+	) as 'appdir',
+
+	#Prioritas PraReg
+ 	(select
+		concat (
+		(case
+		  when pr.iappbusdev=1 then 'Reject'
+		  when pr.iappbusdev=2 then'Approve'
+		  else 'Waiting For Approval'
+		  end),' Oleh: ',pr.cnip,
+		  ' Pada: ', pr.tappbusdev
+	)
+	from  plc2.plc2_upb_prioritas_detail prd
+	inner join plc2.plc2_upb_prioritas pr on pr.iprioritas_id=prd.iprioritas_id and pr.ldeleted=0
+	where prd.iupb_id=ID and prd.ldeleted=0
+	order by pr.iyear desc limit 1)
+	as 'setpraapp',
+
+		#Input Sample Originator
+	ifnull((select sor.dTanggalKirimBD 
+	from plc2.plc2_upb_date_sample sor where sor.iupb_id=ID
+	order by sor.iCounter desc limit 1),'')as tglOriBD,
+
+	ifnull((select cPengirimBD 
+	from plc2.plc2_upb_date_sample sor where sor.iupb_id=ID
+	order by sor.iCounter desc limit 1),'')as pengirimOriBD,
+
+	ifnull((select sor.dTanggalTerimaPD
+	from plc2.plc2_upb_date_sample sor where sor.iupb_id=ID
+	order by sor.iCounter desc limit 1),'') as tglOriPD,
+	ifnull((select sor.cPenerimaPD
+	from plc2.plc2_upb_date_sample sor where sor.iupb_id=ID
+	order by sor.iCounter desc limit 1),'') as penerimaOriPD,
+
+	ifnull((select sor.dTanggalTerimaAD
+	from plc2.plc2_upb_date_sample sor where sor.iupb_id=ID
+	order by sor.iCounter desc limit 1),'') as tglOriAD,
+	ifnull((select sor.cPenerimaAD
+	from plc2.plc2_upb_date_sample sor where sor.iupb_id=ID
+	order by sor.iCounter desc limit 1),'') as penerimaOriAD,
+
+
+	ifnull((select sor.dTanggalTerimaQA
+	from plc2.plc2_upb_date_sample sor where sor.iupb_id=ID
+	order by sor.iCounter desc limit 1),'') as tglOriQA,
+	ifnull((select sor.cPenerimaQA
+	from plc2.plc2_upb_date_sample sor where sor.iupb_id=ID
+	order by sor.iCounter desc limit 1),'') as penerimaOriQA,
+
+
+	#ambil id po dan id request sample
+	( select sm3.ireq_id from  plc2.plc2_upb_request_sample sm3 where
+		sm3.iupb_id =ID and ldeleted = 0   order by sm3.ireq_id desc limit 1
+	) as iReqid,
+	( select po1.ipo_id from plc2.plc2_upb_po_detail po1 where po1.ireq_id =
+		iReqid and ldeleted = 0  order by po1.ipo_id desc limit 1) as ID_PO,
+
+	#Permintaan Sample
+	(select
+		concat (
+				(case
+				  when rs.iapppd=1 then 'Reject'
+				  when rs.iapppd=2 then 'Approve'
+				  end),' Oleh: ',rs.vnip_apppd,
+				  ' Pada: ',rs.tapppd
+			)
+		 from plc2.plc2_upb_request_sample rs
+			where rs.ireq_id=iReqid) as appreqsample,
+
+		#PO Sample
+		(select
+					concat (
+								(case
+								  when po.iapppr=1 then 'Reject'
+								  when po.iapppr=2 then 'Approve'
+								  end),' Oleh: ',po.vnip_pur,
+								  ' Pada: ',po.tapp_pur
+							)
+			 from plc2.plc2_upb_po po
+				where po.ipo_id in 
+				(select po1.ipo_id from plc2.plc2_upb_po_detail po1 
+					inner join plc2.plc2_upb_po po2 on po1.ipo_id=po2.ipo_id
+					where po1.ireq_id =iReqid and po1.ldeleted = 0 and po2.iapppr in 
+					(if((select count(po1.ipo_id) from plc2.plc2_upb_po_detail po1 where po1.ireq_id =iReqid 
+					and po1.ldeleted = 0 order by po1.ipo_id desc)>=2,2,1),
+					if((select count(po1.ipo_id) from plc2.plc2_upb_po_detail po1 where po1.ireq_id =iReqid 
+					and po1.ldeleted = 0 order by po1.ipo_id desc)>=2,0,2)) order by po1.ipo_id desc)	
+				and po.iapppr in 
+				(if((select count(po1.ipo_id) from plc2.plc2_upb_po_detail po1 where po1.ireq_id =iReqid 
+					and ldeleted = 0 order by po1.ipo_id desc)>=2,2,1),
+					if((select count(po1.ipo_id) from plc2.plc2_upb_po_detail po1 where po1.ireq_id =iReqid 
+					and po1.ldeleted = 0 order by po1.ipo_id desc)>=2,0,2)) order by po.ipo_id desc limit 1) as appro_pr,
+
+		#Penerimaan Sample
+		(select
+			concat (
+				(case
+				  when ro.iapppr=1 then 'Reject'
+				  when ro.iapppr=2 then 'Approve'
+			   end),' Oleh: ',ro.vnip_pur,
+				' Pada: ',ro.tapp_pur
+				  )
+		   from plc2.plc2_upb_ro ro
+		  where
+		 	 ro.iro_id=(select rod.iro_id from plc2.plc2_upb_ro_detail rod
+				where rod.ipo_id=ID_PO order by rod.ipo_id desc limit 1
+										)
+								) as apprecv_pr,
+
+		# PD Terima sample bahan baku
+		(select
+	concat (
+		' Oleh: ',rod.vrec_nip_pd,
+		' Pada: ',rod.trec_date_pd
+		  )
+		from plc2.plc2_upb_ro_detail rod
+		where rod.ipo_id=ID_PO
+		and rod.ldeleted=0
+		order by rod.irodet_id desc limit 1
+		) as rec_pd,
+
+		# QC Terima sample bahan baku
+	(select
+	concat (
+		' Oleh: ',rod.vrec_nip_qc,
+		' Pada: ',rod.trec_date_qc
+		  )
+		from plc2.plc2_upb_ro_detail rod
+		where rod.ipo_id=ID_PO
+		and rod.ldeleted=0
+		order by rod.irodet_id desc limit 1
+		) as rec_qc,
+
+		# QA Terima sample bahan baku
+	(select
+	concat (
+		' Oleh: ',rod.vrec_nip_qa,
+		' Pada: ',rod.trec_date_qa
+		  )
+		from plc2.plc2_upb_ro_detail rod
+		where rod.ipo_id=ID_PO
+		and rod.ldeleted=0
+		order by rod.irodet_id desc limit 1
+		) as rec_qa,
+
+		#PD App Analisa Sample Bahan Baku
+		(select
+		concat (
+			(case
+			  when rod.iapppd_analisa=1 then 'Reject'
+			  when rod.iapppd_analisa=2 then 'Approve'
+		   end),' Oleh: ',rod.vnip_apppd_analisa,
+			' Pada: ',rod.tapppd_analisa
+			  )
+			from plc2.plc2_upb_ro_detail rod
+			where rod.ipo_id=ID_PO and rod.ldeleted=0	order by rod.irodet_id desc limit 1
+		  ) as apppd_analisa,
+
+  		#PD App Release Bahan Baku
+		 (select
+			concat (
+				(case
+				  when rod.iapppd_rls=1 then 'Reject'
+				  when rod.iapppd_rls=2 then 'Approve'
+			   end),' Oleh: ',rod.vnip_apppd_rls,
+				' Pada: ',rod.tapppd_rls
+				  )
+				from plc2.plc2_upb_ro_detail rod
+				where rod.ipo_id=ID_PO and rod.ldeleted=0
+				order by rod.irodet_id desc limit 1
+			) as apppd_rls,
+
+		#SOI Bahan Baku QA
+		(select
+			concat (
+			(case
+			  when f4.iappqa=1 then 'Reject'
+			  when f4.iappqa=2 then'Approve'
+			  else 'Waiting For Approval'
+			  end),' Oleh: ',f4.vnip_qa,
+			  ' Pada: ',f4.tapp_qa
+			)
+	 	from plc2.plc2_upb_soi_bahanbaku f4
+		where f4.iupb_id=$P{iupb_id} order by f4.isoibb_id desc limit 1) as appsoibbqa,
+
+		#SOI Bahan Baku QC
+		(select
+			concat (
+			(case
+			  when f4.iappqc=1 then 'Reject'
+			  when f4.iappqc=2 then'Approve'
+			  else 'Waiting For Approval'
+			  end),' Oleh: ',f4.vnip_qc,
+			  ' Pada: ',f4.tapp_qc
+			)
+	 	from plc2.plc2_upb_soi_bahanbaku f4
+		where f4.iupb_id=$P{iupb_id} order by f4.isoibb_id desc limit 1) as appsoibbqc,
+
+	# simpan id formula sementara
+	(select fo.ifor_id from plc2.plc2_upb_formula fo
+	where fo.iupb_id=ID
+	order by fo.ifor_id desc limit 1 ) as FOR_ID,
+
+	#App PD Formula Skala Trial
+	(select
+		concat (
+		ifnull((case
+		  when fo.iformula_apppd=1 then 'Reject'
+		  when fo.iformula_apppd=2 then'Approve'
+		  else 'Waiting for Approval'
+		  end),'-'),' Oleh: ',ifnull(fo.vformula_nip_apppd,'-'),
+		  ' Pada: ',ifnull(fo.tformula_apppd,'-')
+	)
+ 	from plc2.plc2_upb_formula fo
+	where fo.ifor_id=FOR_ID) as appforpd,
+
+	#App PD Stress Test
+	(select
+		concat (
+		ifnull((case
+		  when fo.istress_apppd=1 then 'Reject'
+		  when fo.istress_apppd=2 then'Approve'
+		  else 'Waiting for Approval'
+		  end),'-'),' Oleh: ',ifnull(fo.vstress_nip_apppd,'-'),
+		  ' Pada: ',ifnull(fo.tstress_apppd,'-')
+	)
+ 	from plc2.plc2_upb_formula fo
+	where fo.ifor_id=FOR_ID) as appstpd,
+
+	#App PD Formula Skala Lab
+	(select
+		concat (
+		ifnull((case
+		  when fo.ilab_apppd=1 then 'Reject'
+		  when fo.ilab_apppd=2 then'Approve'
+		  else 'Waiting for Approval'
+		  end),'-'),' Oleh: ',ifnull(fo.vlab_nip_apppd,'-'),
+		  ' Pada: ',ifnull(fo.tlab_apppd,'-')
+		)
+	from plc2.plc2_upb_formula fo
+	where fo.ifor_id=FOR_ID) as applabpd,
+
+	#QA App KSK
+		 (select
+			concat (
+				(case
+				  when rod.iappqa_ksk=1 then 'Reject'
+				  when rod.iappqa_ksk=2 then 'Approve'
+			   end),' Oleh: ',rod.vnip_appqa_ksk,
+				' Pada: ',rod.tappqa_ksk
+				  )
+				from plc2.plc2_upb_ro_detail rod
+				where rod.ipo_id=ID_PO
+				order by rod.irodet_id desc limit 1
+			) as apppd_ksk,
+
+
+
+	#stabilita Lab 0
+	(select
+		concat(
+		ifnull((case
+			  when ts.iapppd=1 then 'Reject'
+			  when ts.iapppd=2 then'Approve'
+			  else 'Waiting for Approval'
+			  end),'-'),' Oleh: ',ifnull(ts.vnip_apppd,'-'),
+			  ' Pada: ',ifnull(ts.tapppd,'-')
+		)
+	from plc2.plc2_upb_stabilita ts
+	where
+ 	ts.ifor_id=FOR_ID and ts.inumber=0 order by ts.ista_id desc limit 1) as stab0,
+
+	 #stabilita Lab 1
+	(select
+		concat(
+		ifnull((case
+			  when ts.iapppd=1 then 'Reject'
+			  when ts.iapppd=2 then'Approve'
+			  else 'Waiting for Approval'
+			  end),'-'),' Oleh: ',ifnull(ts.vnip_apppd,'-'),
+			  ' Pada: ',ifnull(ts.tapppd,'-')
+		)
+	from plc2.plc2_upb_stabilita ts
+	where
+ 	ts.ifor_id=FOR_ID and ts.inumber=1 order by ts.ista_id desc limit 1) as stab1,
+
+	 #stabilita Lab 3
+	(select
+		concat(
+		ifnull((case
+			  when ts.iapppd=1 then 'Reject'
+			  when ts.iapppd=2 then'Approve'
+			  else 'Waiting for Approval'
+			  end),'-'),' Oleh: ',ifnull(ts.vnip_apppd,'-'),
+			  ' Pada: ',ifnull(ts.tapppd,'-')
+		)
+	from plc2.plc2_upb_stabilita ts
+	where
+ 	ts.ifor_id=FOR_ID and ts.inumber=3 order by ts.ista_id desc limit 1) as stab3,
+
+ 	#stabilita Lab 6
+	(select
+		concat(
+		ifnull((case
+			  when ts.iapppd=1 then 'Reject'
+			  when ts.iapppd=2 then'Approve'
+			  else 'Waiting for Approval'
+			  end),'-'),' Oleh: ',ifnull(ts.vnip_apppd,'-'),
+			  ' Pada: ',ifnull(ts.tapppd,'-')
+		)
+	from plc2.plc2_upb_stabilita ts
+	where
+ 	ts.ifor_id=FOR_ID	and ts.inumber=6 order by ts.ista_id desc limit 1) as stab6,
+
+ 	#Best Formula Approval
+ 	(select
+		(case
+		  when fo.ibest=1 then ' '
+		  when fo.ibest=2 then (concat (' Oleh: ',ifnull(fo.vbest_nip_apppd,'-'),
+		  ' Pada: ',ifnull(fo.tbest_apppd,'-')))
+		  else ''
+		  end)
+ 	from plc2.plc2_upb_formula fo
+	where fo.ifor_id=FOR_ID) as appbestpd,
+
+	#spek FG PD
+		(select
+			concat (
+			(case
+			  when f1.iapppd=1 then 'Reject'
+			  when f1.iapppd=2 then'Approve'
+			  else 'Waiting For Approval'
+			  end),' Oleh: ',f1.vnip_pd,
+			  ' Pada: ',f1.tapp_pd
+			)
+	 	from plc2.plc2_upb_spesifikasi_fg f1
+		where f1.iupb_id=ID order by f1.ispekfg_id desc limit 1) as appsfgpd,
+
+		#spek FG QA
+		(select
+			concat (
+			(case
+			  when f2.iappqa=1 then 'Reject'
+			  when f2.iappqa=2 then'Approve'
+			  else 'Waiting For Approval'
+			  end),' Oleh: ',f2.vnip_qa,
+			  ' Pada: ',f2.tapp_qa
+			)
+	 	from plc2.plc2_upb_spesifikasi_fg f2
+		where f2.iupb_id=$P{iupb_id} order by f2.ispekfg_id desc limit 1) as appsfgqa,
+
+		#SOI FG QA
+		(select
+			concat (
+			(case
+			  when f3.iappqa=1 then 'Reject'
+			  when f3.iappqa=2 then'Approve'
+			  else 'Waiting For Approval'
+			  end),' Oleh: ',f3.vnip_qa,
+			  ' Pada: ',f3.tapp_qa
+			)
+	 	from plc2.plc2_upb_soi_fg f3
+		where f3.iupb_id=ID order by f3.isoi_id desc limit 1) as appsofgqa,
+
+		#SOI FG Tentative QC
+		(select
+			concat (
+			(case
+			  when f4.iappqc=1 then 'Reject'
+			  when f4.iappqc=2 then'Approve'
+			  else 'Waiting For Approval'
+			  end),' Oleh: ',f4.vnip_qc,
+			  ' Pada: ',f4.tapp_qc
+			)
+	 	from plc2.plc2_upb_soi_fg f4
+		where f4.iupb_id=$P{iupb_id} order by f4.isoi_id desc limit 1) as appsofgqc,
+
+		#SOI Mikro Tentative QA
+		(select
+			concat (
+			(case
+			  when f5.iappqa=1 then 'Reject'
+			  when f5.iappqa=2 then'Approve'
+			  else 'Waiting For Approval'
+			  end),' Oleh: ',f5.vnip_qa,
+			  ' Pada: ',f5.tapp_qa
+			)
+	 	from plc2.plc2_upb_mikro_fg f5
+		where f5.iupb_id=$P{iupb_id} order by f5.imikro_id desc limit 1) as appmikroqa,
+
+	#App HPP PD
+	(select
+		(concat (' Oleh: ',ifnull(hp.vnip_apppd,'-'),
+			  ' Pada: ',ifnull(hp.tapppd,'-')))
+		 from plc2.plc2_hpp hp where hp.ifor_id=FOR_ID
+	 ) as apphpp_pd,
+
+	 #App HPP FA
+	 	(select
+		(concat (' Oleh: ',ifnull(hp.vnip_appfa,'-'),
+			  ' Pada: ',ifnull(hp.tappfa,'-')))
+	 from plc2.plc2_hpp hp where hp.ifor_id=FOR_ID
+	 ) as apphpp_fa,
+
+ 		#App HPP BD
+	 	(select
+		(concat (' Oleh: ',(case
+			  when hp.vnip_appbd='-' then 'Tidak Memerlukan'
+			  when hp.vnip_appbd='null' then '-'
+		   end),
+			  ' Pada: ',ifnull(hp.tappbd,'-')))
+		 from plc2.plc2_hpp hp where hp.ifor_id=FOR_ID
+		 ) as apphpp_bd,
+
+  		#App HPP Dir
+	  	(select
+			(concat (' Oleh: ',ifnull(hp.vnip_appdir,'-'),
+				  ' Pada: ',ifnull(hp.tappdir,'-')))
+		 from plc2.plc2_hpp hp where hp.ifor_id=FOR_ID
+		 ) as apphpp_dir,
+
+		 #App Basic Formula PD
+		(select
+			(case
+			  when fo.iapp_basic=1 then ' '
+			  when fo.iapp_basic=2 then (concat (' Oleh: ',ifnull(fo.vbasic_nip_apppd,'-'),
+			  ' Pada: ',ifnull(fo.tbasic_apppd,'-')))
+			  else ''
+			  end)
+	 		from plc2.plc2_upb_formula fo
+		where fo.ifor_id=FOR_ID) as appbasicpd,
+
+			#Bahan Kemas Appp PD
+		(select
+			concat (
+					(case
+					  when bk.iapppd=1 then 'Reject'
+					  when bk.iapppd=2 then 'Approve'
+					  end),' Oleh: ',bk.vnip_apppd,
+					  ' Pada: ',bk.tapppd
+				)
+		 from plc2.plc2_upb_bahan_kemas bk
+			where bk.iupb_id=ID
+			order by bk.ibk_id desc limit 1) as bkapp_pd,
+
+		#Bahan Kemas Appp QA
+		(select
+				concat (
+						(case
+						  when bk.iappqa=1 then 'Reject'
+						  when bk.iappqa=2 then 'Approve'
+						  end),' Oleh: ',bk.vnip_appqa,
+						  ' Pada: ',bk.tappqa
+					)
+		 from plc2.plc2_upb_bahan_kemas bk
+			where bk.iupb_id=ID
+			order by bk.ibk_id desc limit 1) as bkapp_qa,
+
+		#Bahan Kemas Appp BD
+		(select
+			concat (
+					(case
+					  when bk.iappbd=1 then 'Reject'
+					  when bk.iappbd=2 then 'Approve'
+					  end),' Oleh: ',bk.vnip_appbd,
+					  ' Pada: ',bk.tappbd
+				)
+		 from plc2.plc2_upb_bahan_kemas bk
+			where bk.iupb_id=ID
+			order by bk.ibk_id desc limit 1) as bkapp_bd,
+
+		#Pembuatan MBR App PD
+		(select
+			concat (
+					(case
+					  when ubm.iapppd_bm=1 then 'Reject'
+					  when ubm.iapppd_bm=2 then 'Approve'
+					  end),' Oleh: ',ubm.vnip_apppd_bm,
+					  ' Pada: ',ubm.tapppd_bm
+				)
+		 from plc2.plc2_upb_buat_mbr ubm
+			where ubm.ifor_id=FOR_ID
+			order by ubm.ibuatmbr_id desc limit 1) as buatmbr_pd,
+
+		#Produksi Pilot App PD
+		(select
+			concat (
+					(case
+					  when ppd.iapppd_pp=1 then 'Reject'
+					  when ppd.iapppd_pp=2 then 'Approve'
+					  end),' Oleh: ',ppd.vnip_apppd_pp,
+					  ' Pada: ',ppd.tapppd_pp
+				)
+		 from plc2.plc2_upb_prodpilot ppd
+			where ppd.ifor_id=FOR_ID
+			order by ppd.iprodpilot_id desc limit 1) as prodpilapp_pd,
+
+		#Cek Dokumen
+		(select
+			concat (
+					(case
+					  when ub.iconfirm_dok=0 then 'Waiting for Confirmation'
+					  when ub.iconfirm_dok=1 then 'Confirmed'
+					  end),' Oleh: ',ub.vnip_confirm_dok,
+					  ' Pada: ',ub.tconfirm_dok
+				)
+		 from plc2.plc2_upb ub
+			where ub.iupb_id=ID
+			order by ub.iupb_id desc limit 1) as confirmdok_bd,
+
+		#Pra Reg UPB
+		concat (
+		(case
+		  when p.iappbusdev_prareg=1 then 'Reject'
+		  when p.iappbusdev_prareg=2 then'Approve'
+		  else 'Waiting For Approval'
+		  end),' Oleh: ',p.vnip_appbusdev_prareg,
+		  ' Pada: ', p.tappbusdev_prareg
+		) as 'praregapp',
+
+		 #Setting Prioritas Registrasi
+		(select
+			concat (
+			(case
+			  when pr.iappbusdev=1 then 'Reject'
+			  when pr.iappbusdev=2 then'Approve'
+			  else 'Waiting For Approval'
+			  end),' Oleh: ',pr.cnip,
+			  ' Pada: ', pr.tappbusdev
+		)
+		from plc2.plc2_upb_prioritas_reg_detail prd
+		inner join plc2.plc2_upb_prioritas_reg pr on pr.iprioritas_id=prd.iprioritas_id and pr.ldeleted=0
+		where  prd.iupb_id=ID and prd.ldeleted=0
+		order by pr.iyear desc limit 1
+		) as setprioreg_app,
+
+		#Registrasi UPB Busdev App
+		concat (
+		(case
+		  when p.iappbusdev_registrasi=1 then 'Reject'
+		  when p.iappbusdev_registrasi=2 then'Approve'
+		  else 'Waiting For Approval'
+		  end),' Oleh: ',p.vnip_appbusdev_registrasi,
+		  ' Pada: ', p.tappbusdev_registrasi
+		) as regapp_busdev,
+
+			#Launching Produk APP BD
+		(select
+		concat (
+				(case
+				  when bk.iappbd_launch=1 then 'Reject'
+				  when bk.iappbd_launch=2 then 'Approve'
+				  end),' Oleh: ',bk.vnip_appbd_launch,
+				  ' Pada: ',bk.tappbd_launch
+			)
+		 from plc2.plc2_upb_bahan_kemas bk
+			where bk.iupb_id=ID
+			order by bk.ibk_id desc limit 1) as launchapp_bd,
+
+		#Launching Produk APP DR
+		(select
+			concat (
+					(case
+					  when bk.iappdr_launch=1 then 'Reject'
+					  when bk.iappdr_launch=2 then 'Approve'
+					  end),' Oleh: ',bk.vnip_appdr_launch,
+					  ' Pada: ',bk.tappdr_launch
+				)
+		 from plc2.plc2_upb_bahan_kemas bk
+			where bk.iupb_id=ID
+			order by bk.ibk_id desc limit 1) as launchapp_dir
+from
+	plc2.plc2_upb p
+WHERE p.ldeleted=0 AND p.iupb_id=$P{iupb_id}
+and p.iteambusdev_id LIKE '%$P!{iteambusdev}%' 
+and p.iteampd_id LIKE '%$P!{iteampd}%']]>
+	</queryString>
+	<field name="ID" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iupb_id" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vupb_nomor" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vupb_nama" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appbus" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appdir" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="setpraapp" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tglOriBD" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="pengirimOriBD" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tglOriPD" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="penerimaOriPD" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tglOriAD" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="penerimaOriAD" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tglOriQA" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="penerimaOriQA" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iReqid" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ID_PO" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appreqsample" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appro_pr" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="apprecv_pr" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="rec_pd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="rec_qc" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="rec_qa" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="apppd_analisa" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="apppd_rls" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appsoibbqa" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appsoibbqc" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="FOR_ID" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appforpd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appstpd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="applabpd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="apppd_ksk" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="stab0" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="stab1" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="stab3" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="stab6" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appbestpd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appsfgpd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appsfgqa" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appsofgqa" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appsofgqc" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appmikroqa" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="apphpp_pd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="apphpp_fa" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="apphpp_bd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="apphpp_dir" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appbasicpd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="bkapp_pd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="bkapp_qa" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="bkapp_bd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="buatmbr_pd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="prodpilapp_pd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="confirmdok_bd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="praregapp" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="setprioreg_app" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="regapp_busdev" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="launchapp_bd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="launchapp_dir" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="73" splitType="Stretch">
+			<staticText>
+				<reportElement x="465" y="0" width="145" height="20"/>
+				<textElement textAlignment="Center">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Report History UPB]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="30" width="109" height="43" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Nomor UPB]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="381" y="51" width="100" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval Direksi]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="281" y="30" width="200" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Daftar UPB]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="109" y="30" width="172" height="43" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Usulan Nama]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1269" y="51" width="106" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval PR]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="4701" y="51" width="342" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Stabilita Pilot I]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="281" y="51" width="100" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval Busdev]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="3417" y="51" width="103" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval QC]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="481" y="51" width="100" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval Busdev]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="5724" y="51" width="100" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval Busdev]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="737" y="51" width="78" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Input (Busdev)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="815" y="51" width="75" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Input (PD)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="963" y="51" width="79" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Input (QA)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="3160" y="51" width="75" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval PD]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="3235" y="51" width="77" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval QA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="3312" y="51" width="105" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval QA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="3520" y="51" width="116" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval QA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="2203" y="51" width="108" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval PD]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="2311" y="51" width="114" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval PD]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="2425" y="51" width="111" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval PD]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="2753" y="51" width="100" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Stabilita Bulan 1]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="2853" y="51" width="98" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Stabilita Bulan 3]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="2951" y="51" width="99" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Stabilita Bulan 6]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="2645" y="51" width="108" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Stabilita Bulan 0]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="3050" y="51" width="110" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval PD]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1042" y="51" width="119" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval PD]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1161" y="51" width="108" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval PR]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1478" y="51" width="102" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Input Data (QC)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1580" y="51" width="99" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Input Data (QA)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1375" y="51" width="103" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Input Data (PD)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1375" y="30" width="304" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Terima Sample Bahan Baku]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1679" y="30" width="131" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<text><![CDATA[Analisa Sample Bahan Baku]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="4030" y="51" width="112" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval (PD)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="3636" y="51" width="96" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval (PD)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="3732" y="51" width="98" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval (FA)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="3830" y="51" width="101" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval (Busdev)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="3931" y="51" width="99" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval (Direksi)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="2536" y="51" width="109" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval (PD)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="6200" y="51" width="113" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval Busdev]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="6313" y="51" width="107" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval Direksi]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="4263" y="51" width="113" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval Busdev]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="4142" y="51" width="121" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval PD]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="5043" y="51" width="340" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Stabilita Pilot II]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="5383" y="51" width="341" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Stabilita Pilot Manufacture]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="4376" y="51" width="105" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval QA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1810" y="30" width="131" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Release Bahan Baku]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1679" y="51" width="131" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval PD]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1810" y="51" width="131" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval PD]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1941" y="51" width="131" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval QC]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1941" y="30" width="262" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[SOI Bahan Baku]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="2072" y="51" width="131" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval QA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="4481" y="51" width="110" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval PD]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="5824" y="51" width="100" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval Busdev]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="737" y="30" width="305" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Input Sample Originator]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="890" y="51" width="73" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Input (AD)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1042" y="30" width="119" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Permintaan Sample]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1161" y="30" width="108" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[PO Sample]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="1269" y="30" width="106" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Penerimaan Sample]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="2203" y="30" width="108" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Formula Skala Trial]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="2311" y="30" width="114" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Stress Test]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="2425" y="30" width="111" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Formula Skala Lab]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="2536" y="30" width="109" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval KSK]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="2645" y="30" width="405" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Stabilita Lab]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="3050" y="30" width="110" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Best Formula]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="3160" y="30" width="152" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Spesifikasi FG (Final)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="3312" y="30" width="208" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Spesifikasi SOI FG]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="3520" y="30" width="116" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[SOI Mikrobiologi]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="3636" y="30" width="394" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval HPP]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="4030" y="30" width="112" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Basic Formula]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="4142" y="30" width="339" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Bahan Kemas]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="4481" y="30" width="110" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Pembuatan  MBR]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="4591" y="51" width="110" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval PD]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="4591" y="30" width="110" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Produksi Pilot]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="4701" y="30" width="1023" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Stabilita Pilot]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="5923" y="51" width="133" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval Busdev]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="5923" y="30" width="133" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Set Prioritas Registrasi]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="6056" y="51" width="143" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval Busdev]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="6056" y="30" width="143" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Registrasi]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="5724" y="30" width="100" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Cek Dokumen]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="5824" y="30" width="100" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Praregistrasi]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="6200" y="30" width="220" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Launching Product]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="481" y="30" width="100" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Set Prioritas Prareg]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="581" y="51" width="78" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Input (PD)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="659" y="51" width="78" height="22" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Approval(PD)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="581" y="30" width="156" height="21" backcolor="#EFEFEF"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Request Originator]]></text>
+			</staticText>
+		</band>
+	</title>
+	<detail>
+		<band height="100">
+			<subreport>
+				<reportElement x="5043" y="0" width="340" height="92"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="iupb_id">
+					<subreportParameterExpression><![CDATA[$F{iupb_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "rpt_history_upb_pilot2.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement x="4701" y="0" width="342" height="92"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="iupb_id">
+					<subreportParameterExpression><![CDATA[$F{iupb_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "rpt_history_upb_pilot1.jasper"]]></subreportExpression>
+			</subreport>
+			<textField isBlankWhenNull="true">
+				<reportElement x="4263" y="0" width="113" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{bkapp_bd}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="3050" y="0" width="110" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement/>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{appbestpd}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2425" y="0" width="111" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{applabpd}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="4030" y="0" width="112" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{appbasicpd}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="5724" y="0" width="100" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{confirmdok_bd}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1042" y="0" width="119" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{appreqsample}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="3520" y="0" width="116" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{appmikroqa}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2072" y="0" width="131" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{appsoibbqa}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="4376" y="0" width="105" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{bkapp_qa}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="5923" y="0" width="133" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{setprioreg_app}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2853" y="0" width="98" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{stab3}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1269" y="0" width="106" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{apprecv_pr}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="3160" y="0" width="75" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{appsfgpd}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="3312" y="0" width="105" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{appsofgqa}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="4591" y="0" width="110" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{prodpilapp_pd}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="3636" y="0" width="96" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{apphpp_pd}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="481" y="0" width="100" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement verticalAlignment="Top">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{setpraapp}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="5824" y="0" width="100" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{praregapp}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="3417" y="0" width="103" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{appsofgqc}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2311" y="0" width="114" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{appstpd}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="381" y="0" width="100" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{appdir}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2203" y="0" width="108" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{appforpd}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1161" y="0" width="108" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{appro_pr}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1810" y="0" width="131" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{apppd_rls}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1478" y="0" width="102" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{rec_qc}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="737" y="0" width="78" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2951" y="0" width="99" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{stab6}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2645" y="0" width="108" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{stab0}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="6056" y="0" width="143" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{regapp_busdev}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="3235" y="0" width="77" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{appsfgqa}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2536" y="0" width="109" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{apppd_ksk}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1375" y="0" width="103" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{rec_pd}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="3830" y="0" width="101" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{apphpp_bd}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="4142" y="0" width="121" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{bkapp_pd}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1941" y="0" width="131" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{appsoibbqc}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="6313" y="0" width="107" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{launchapp_dir}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="4481" y="0" width="110" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{buatmbr_pd}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1580" y="0" width="99" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{rec_qa}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="1679" y="0" width="131" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{apppd_analisa}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="3931" y="0" width="99" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{apphpp_dir}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="6200" y="0" width="113" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{launchapp_bd}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="3732" y="0" width="98" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{apphpp_fa}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="2753" y="0" width="100" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{stab1}]]></textFieldExpression>
+			</textField>
+			<subreport>
+				<reportElement x="5383" y="0" width="341" height="92"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="iupb_id">
+					<subreportParameterExpression><![CDATA[$F{iupb_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "rpt_history_upb_pilot3.jasper"]]></subreportExpression>
+			</subreport>
+			<textField>
+				<reportElement x="737" y="1" width="78" height="54"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{pengirimOriBD}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="737" y="12" width="78" height="54"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{tglOriBD}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="815" y="12" width="75" height="54"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{tglOriPD}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="815" y="1" width="75" height="54"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{penerimaOriPD}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="890" y="12" width="73" height="54"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{tglOriAD}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="890" y="1" width="73" height="54"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{penerimaOriAD}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="963" y="12" width="79" height="54"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{tglOriQA}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="963" y="1" width="79" height="54"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{penerimaOriQA}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="890" y="0" width="73" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="963" y="0" width="79" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="815" y="0" width="75" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="581" y="0" width="78" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+			</textField>
+			<subreport>
+				<reportElement x="581" y="1" width="78" height="90"/>
+				<subreportParameter name="ID">
+					<subreportParameterExpression><![CDATA[$F{ID}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "rpt_request_originator.jasper"]]></subreportExpression>
+			</subreport>
+			<textField isBlankWhenNull="true">
+				<reportElement x="281" y="0" width="100" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{appbus}]]></textFieldExpression>
+			</textField>
+			<subreport>
+				<reportElement x="659" y="1" width="78" height="90"/>
+				<subreportParameter name="ID">
+					<subreportParameterExpression><![CDATA[$F{ID}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "rpt_request_originator_app.jasper"]]></subreportExpression>
+			</subreport>
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="109" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{vupb_nomor}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="109" y="0" width="172" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{vupb_nama}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="659" y="0" width="78" height="92"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

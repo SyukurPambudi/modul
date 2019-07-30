@@ -1,0 +1,102 @@
+<?php 
+/*echo $row_value;
+echo "<br>";
+echo $hasTeamID;*/
+
+	
+	if($act == 'create'){
+
+		$sql = "SELECT a.ikategori_id as valval , a.vkategori as showshow
+					from plc2.plc2_upb_master_kategori_upb a
+					where a.ldeleted=0";
+    	$teams = $this->db->query($sql)->result_array();
+    	$echo = '<select name="'.$field.'" id="'.$id.'" class="choose" >';
+    	foreach($teams as $t) {
+    		$echo .= '<option value="'.$t['valval'].'">'.$t['showshow'].'</option>';
+    	}
+    	$echo .= '</select>';
+
+
+	}else{ 
+
+		
+		if ($rowDataH['iappdireksi']==2) { 
+			$sql = "SELECT a.ikategori_id as valval , a.vkategori as showshow
+					from plc2.plc2_upb_master_kategori_upb a
+					where a.ldeleted=0 and a.ikategori_id IN (".$row_value.")"; 
+			
+			$teams = $this->db->query($sql)->row_array(); 
+			$echo = $teams['showshow'];
+
+			
+		} else {
+			$sql = "SELECT a.ikategori_id as valval , a.vkategori as showshow
+					from plc2.plc2_upb_master_kategori_upb a
+					where a.ldeleted=0";
+	    	$teams = $this->db->query($sql)->result_array();
+	    	$echo = '<select name="'.$field.'" id="'.$id.'" class="choose">';
+	    	$echo .= '<option value="">--Pilih--</option>';
+	    	foreach($teams as $t) {
+	    		$selected = $row_value == $t['valval'] ? 'selected' : '';
+	    		$echo .= '<option '.$selected.' value="'.$t['valval'].'">'.$t['showshow'].'</option>';
+	    	}
+	    	$echo .= '</select>';
+		
+		}
+		
+		$echo .= '
+					<style>
+						#'.$id.'{
+							min-w	idth: 150px;
+						}
+					</style>
+			';
+
+		echo $echo;
+
+	}
+		
+
+	/*if($act == 'create'){
+
+		$sql = "SELECT t.* FROM plc2.plc2_upb_team t
+				WHERE t.vtipe = 'BD' AND t.ldeleted = '0' AND t.iteam_id IN (".$hasTeamID.")";
+    	$teams = $this->db->query($sql)->result_array();
+    	$echo = '<select name="'.$field.'" id="'.$id.'" class="choose" >';
+    	foreach($teams as $t) {
+    		$echo .= '<option value="'.$t['iteam_id'].'">'.$t['vteam'].'</option>';
+    	}
+    	$echo .= '</select>';
+
+
+	}else{
+		$sql = "SELECT t.* FROM plc2.plc2_upb_team t
+				WHERE t.vtipe = 'BD' AND t.ldeleted = '0' AND t.iteam_id IN (".$hasTeamID.")";
+    	$teams = $this->db->query($sql)->result_array();
+    	$echo = '<select name="'.$field.'" id="'.$id.'" class="choose">';
+    	$echo .= '<option value="">--Pilih--</option>';
+    	foreach($teams as $t) {
+    		$selected = $row_value == $t['iteam_id'] ? 'selected' : '';
+    		$echo .= '<option '.$selected.' value="'.$t['iteam_id'].'">'.$t['vteam'].'</option>';
+    	}
+    	$echo .= '</select>';
+		
+
+
+	}
+		$echo .= '
+					<style>
+						#'.$id.'{
+							min-w	idth: 150px;
+						}
+					</style>
+			';
+
+		echo $echo;*/
+		
+		
+			
+		
+
+
+ ?>

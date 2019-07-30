@@ -1,0 +1,11 @@
+<?php 
+	$grid=str_replace("_".$field, "", $id);
+    $iupb_id=isset($dataHead["iupb_id"])?$dataHead["iupb_id"]:"0";
+    $iappbusdev_prareg=isset($dataHead["iappbusdev_prareg"])?$dataHead["iappbusdev_prareg"]:"0";
+    $value=isset($dataHead[$field])?$dataHead[$field]:"-";
+    $get=$this->input->get();
+if ($iappbusdev_prareg ==2 ){ ?>
+    <script>
+        $("#<?php echo $id; ?>").parent().html('<input type="text" class="input_rows1" readonly="readonly" size="15" value="<?php echo $value; ?>">');
+    </script>
+      <?php } ?>

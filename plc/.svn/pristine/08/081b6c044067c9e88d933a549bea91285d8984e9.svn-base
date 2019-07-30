@@ -1,0 +1,749 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="rpt_history_upb" language="groovy" pageWidth="6176" pageHeight="2380" orientation="Landscape" whenNoDataType="AllSectionsNoDetail" columnWidth="6136" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
+	<parameter name="tanggal1" class="java.lang.String">
+		<defaultValueExpression><![CDATA["2013-01-01"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<parameterDescription><![CDATA[]]></parameterDescription>
+		<defaultValueExpression><![CDATA["D:/Workspace/PHP/sourceerp/modules/plc/laporan/"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="tanggal2" class="java.lang.String">
+		<defaultValueExpression><![CDATA["2014-01-01"]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select 
+	#No UPB
+	p.iupb_id as ID, 
+	p.vupb_nomor  as upb_no,
+	p.vupb_nama as nama,
+	
+	#Approval Busdev
+	( SELECT(IF (p.iappbusdev = 2, 'Approve', 
+				IF(p.iappbusdev = 1, 'Reject', ' - ')
+				)
+			)
+	) as 'Approval Busdev',
+	(select tupdate from plc2.plc2_upb_approve where vmodule in ('AppUPB-BD','2507') and vtipe='BD' and iupb_id=ID and ldeleted=0 limit 1) as 'Tanggal Approval',
+	(select cnip from plc2.plc2_upb_approve where vmodule in ('AppUPB-BD','2507') and vtipe='BD' and iupb_id=ID and ldeleted=0 limit 1) as 'NIP Approval',
+
+	#Approval Direksi
+	( SELECT(IF (p.iappdireksi = 2, 'Approve', 
+				IF(p.iappdireksi = 1, 'Reject', ' - ')
+				)
+			)
+	) as 'Approval Direksi',
+	(select tupdate from plc2.plc2_upb_approve where vmodule in ('AppUPB-DR','2507') and vtipe='DR' and iupb_id=ID and ldeleted=0 limit 1) as 'DR Tanggal Approval',
+	(select cnip from plc2.plc2_upb_approve where vmodule in ('AppUPB-DR','2507') and vtipe='DR' and iupb_id=ID and ldeleted=0 limit 1) as 'DR NIP Approval',
+	
+	#Prioritas PraReg
+ 	(select 
+		concat (
+		(case
+		  when pr.iappbusdev=1 then 'Reject'
+		  when pr.iappbusdev=2 then'Approve'
+		  else 'Waiting For Approval' 
+		  end),' Oleh: ',pr.cnip,
+		  ' Pada: ', pr.tappbusdev
+	) 
+	from  plc2_upb_prioritas_detail prd
+	inner join plc2_upb_prioritas pr on pr.iprioritas_id=prd.iprioritas_id and pr.ldeleted=0
+	where prd.iupb_id=ID and prd.ldeleted=0
+	order by pr.iyear desc limit 1)
+	as 'App set prareg',
+	
+	#Pra Reg UPB
+		concat (
+		(case
+		  when p.iappbusdev_prareg=1 then 'Reject'
+		  when p.iappbusdev_prareg=2 then'Approve'
+		  else 'Waiting For Approval' 
+		  end),' Oleh: ',p.vnip_appbusdev_prareg,
+		  ' Pada: ', p.tappbusdev_prareg
+	) as 'prareg app',				
+	#Input Sample Originator
+	ifnull((select sor.dTanggalKirimBD 
+	from plc2_upb_date_sample sor where sor.iupb_id=ID
+	order by sor.iCounter desc limit 1),'')as tglOriBD,
+	ifnull((select sor.dTanggalTerimaPD
+	from plc2_upb_date_sample sor where sor.iupb_id=ID
+	order by sor.iCounter desc limit 1),'') as tglOriPD,
+	ifnull((select sor.dTanggalTerimaAD
+	from plc2_upb_date_sample sor where sor.iupb_id=ID
+	order by sor.iCounter desc limit 1),'') as tglOriAD,
+	ifnull((select sor.dTanggalTerimaQA
+	from plc2_upb_date_sample sor where sor.iupb_id=ID
+	order by sor.iCounter desc limit 1),'') as tglOriQA,
+	
+	#spek FG Tentative PD
+	(select
+		concat (
+		(case
+		  when f1.iapppd=1 then 'Reject'
+		  when f1.iapppd=2 then'Approve' 
+		  else 'Waiting For Approval'
+		  end),' Oleh: ',f1.vnip_pd,
+		  ' Pada: ',f1.tapp_pd
+		)
+ 	from plc2.plc2_upb_spesifikasi_fg f1 
+	where f1.iupb_id=ID and f1.itype=0 order by f1.ispekfg_id desc limit 1) as appsfgpd,
+	
+	#spek FG Tentative QA
+	(select
+		concat (
+		(case
+		  when f2.iappqa=1 then 'Reject'
+		  when f2.iappqa=2 then'Approve' 
+		  else 'Waiting For Approval'
+		  end),' Oleh: ',f2.vnip_qa,
+		  ' Pada: ',f2.tapp_qa
+		)
+ 	from plc2.plc2_upb_spesifikasi_fg f2 
+	where f2.iupb_id=ID and f2.itype=0 order by f2.ispekfg_id desc limit 1) as appsfgqa,
+
+	#SOI FG Tentative QA
+	(select
+		concat (
+		(case
+		  when f3.iappqa=1 then 'Reject'
+		  when f3.iappqa=2 then'Approve' 
+		  else 'Waiting For Approval'
+		  end),' Oleh: ',f3.vnip_qa,
+		  ' Pada: ',f3.tapp_qa
+		)
+ 	from plc2.plc2_upb_soi_fg f3 
+	where f3.iupb_id=ID and f3.itype=0 order by f3.isoi_id desc limit 1) as appsofgqa,
+	
+	#SOI FG Tentative QC	
+	(select
+		concat (
+		(case
+		  when f4.iappqc=1 then 'Reject'
+		  when f4.iappqc=2 then'Approve' 
+		  else 'Waiting For Approval'
+		  end),' Oleh: ',f4.vnip_qc,
+		  ' Pada: ',f4.tapp_qc
+		)
+ 	from plc2.plc2_upb_soi_fg f4 
+	where f4.iupb_id=ID and f4.itype=0 order by f4.isoi_id desc limit 1) as appsofgqc,
+	
+	#SOI Mikro Tentative QA
+	(select
+		concat (
+		(case
+		  when f5.iappqa=1 then 'Reject'
+		  when f5.iappqa=2 then'Approve' 
+		  else 'Waiting For Approval'
+		  end),' Oleh: ',f5.vnip_qa,
+		  ' Pada: ',f5.tapp_qa
+		)
+ 	from plc2.plc2_upb_mikro_fg f5 
+	where f5.iupb_id=ID and f5.itype=0 order by f5.imikro_id desc limit 1) as appmikroqa,
+	
+	# simpan id formula sementara
+	(select fo.ifor_id from plc2_upb_formula fo 
+	where fo.iupb_id=ID
+	order by fo.ifor_id desc limit 1 ) as FOR_ID,
+	
+	#App PD FSK
+	(select
+		concat (
+		ifnull((case
+		  when fo.iformula_apppd=1 then 'Reject'
+		  when fo.iformula_apppd=2 then'Approve'
+		  else 'Waiting for Approval' 
+		  end),'-'),' Oleh: ',ifnull(fo.vformula_nip_apppd,'-'),
+		  ' Pada: ',ifnull(fo.tformula_apppd,'-')
+	)
+ 	from plc2_upb_formula fo 
+	where fo.ifor_id=FOR_ID) as appforpd,
+	
+	#App PD Stress Test
+	(select
+		concat (
+		ifnull((case
+		  when fo.istress_apppd=1 then 'Reject'
+		  when fo.istress_apppd=2 then'Approve'
+		  else 'Waiting for Approval' 
+		  end),'-'),' Oleh: ',ifnull(fo.vstress_nip_apppd,'-'),
+		  ' Pada: ',ifnull(fo.tstress_apppd,'-')
+	)
+ 	from plc2_upb_formula fo 
+	where fo.ifor_id=FOR_ID) as appstpd,
+	
+	#App PD Formula Skala Lab
+	(select
+		concat (
+		ifnull((case
+		  when fo.ilab_apppd=1 then 'Reject'
+		  when fo.ilab_apppd=2 then'Approve'
+		  else 'Waiting for Approval' 
+		  end),'-'),' Oleh: ',ifnull(fo.vlab_nip_apppd,'-'),
+		  ' Pada: ',ifnull(fo.tlab_apppd,'-')
+		)
+	from plc2_upb_formula fo 
+	where fo.ifor_id=FOR_ID) as applabpd,
+		
+	#stabilita Lab 0
+	(select 
+		concat(
+		ifnull((case
+			  when ts.iapppd=1 then 'Reject'
+			  when ts.iapppd=2 then'Approve'
+			  else 'Waiting for Approval' 
+			  end),'-'),' Oleh: ',ifnull(ts.vnip_apppd,'-'),
+			  ' Pada: ',ifnull(ts.tapppd,'-')
+		) 
+	from plc2_upb_stabilita ts
+	where 
+ 	ts.ifor_id=FOR_ID and ts.inumber=0 order by ts.ista_id desc limit 1) as stab0,
+ 	
+	 #stabilita Lab 1
+	(select 
+		concat(
+		ifnull((case
+			  when ts.iapppd=1 then 'Reject'
+			  when ts.iapppd=2 then'Approve'
+			  else 'Waiting for Approval' 
+			  end),'-'),' Oleh: ',ifnull(ts.vnip_apppd,'-'),
+			  ' Pada: ',ifnull(ts.tapppd,'-')
+		) 
+	from plc2_upb_stabilita ts
+	where 
+ 	ts.ifor_id=FOR_ID and ts.inumber=1 order by ts.ista_id desc limit 1) as stab1,
+ 	
+	 #stabilita Lab 3
+	(select 
+		concat(
+		ifnull((case
+			  when ts.iapppd=1 then 'Reject'
+			  when ts.iapppd=2 then'Approve'
+			  else 'Waiting for Approval' 
+			  end),'-'),' Oleh: ',ifnull(ts.vnip_apppd,'-'),
+			  ' Pada: ',ifnull(ts.tapppd,'-')
+		) 
+	from plc2_upb_stabilita ts
+	where 
+ 	ts.ifor_id=FOR_ID and ts.inumber=3 order by ts.ista_id desc limit 1) as stab3,
+ 	
+ 	#stabilita Lab 6
+	(select 
+		concat(
+		ifnull((case
+			  when ts.iapppd=1 then 'Reject'
+			  when ts.iapppd=2 then'Approve'
+			  else 'Waiting for Approval' 
+			  end),'-'),' Oleh: ',ifnull(ts.vnip_apppd,'-'),
+			  ' Pada: ',ifnull(ts.tapppd,'-')
+		) 
+	from plc2_upb_stabilita ts
+	where 
+ 	ts.ifor_id=FOR_ID	and ts.inumber=6 order by ts.ista_id desc limit 1) as stab6,
+ 
+ 	#Best Formula Approval
+ 	(select
+		(case
+		  when fo.ibest=1 then ' '
+		  when fo.ibest=2 then (concat (' Oleh: ',ifnull(fo.vbest_nip_apppd,'-'),
+		  ' Pada: ',ifnull(fo.tbest_apppd,'-')))
+		  else '' 
+		  end)
+ 	from plc2_upb_formula fo 
+	where fo.ifor_id=FOR_ID) as appbestpd,
+		
+	#spek FG Final PD
+	(select
+		concat (
+		(case
+		  when f1.iapppd=1 then 'Reject'
+		  when f1.iapppd=2 then'Approve' 
+		  else 'Waiting For Approval'
+		  end),' Oleh: ',f1.vnip_pd,
+		  ' Pada: ',f1.tapp_pd
+		)
+ 	from plc2.plc2_upb_spesifikasi_fg f1 
+	where f1.iupb_id=ID and f1.itype=1 order by f1.ispekfg_id desc limit 1) as appsfgpdf,
+	
+	#spek FG Final QA
+	(select
+		concat (
+		(case
+		  when f2.iappqa=1 then 'Reject'
+		  when f2.iappqa=2 then'Approve' 
+		  else 'Waiting For Approval'
+		  end),' Oleh: ',f2.vnip_qa,
+		  ' Pada: ',f2.tapp_qa
+		)
+ 	from plc2.plc2_upb_spesifikasi_fg f2 
+	where f2.iupb_id=ID and f2.itype=1 order by f2.ispekfg_id desc limit 1) as appsfgqaf,
+
+	#SOI FG Final QA
+	(select
+		concat (
+		(case
+		  when f3.iappqa=1 then 'Reject'
+		  when f3.iappqa=2 then'Approve' 
+		  else 'Waiting For Approval'
+		  end),' Oleh: ',f3.vnip_qa,
+		  ' Pada: ',f3.tapp_qa
+		)
+ 	from plc2.plc2_upb_soi_fg f3 
+	where f3.iupb_id=ID and f3.itype=1 order by f3.isoi_id desc limit 1) as appsofgqaf,
+	
+	#SOI FG Final QC	
+	(select
+		concat (
+		(case
+		  when f4.iappqc=1 then 'Reject'
+		  when f4.iappqc=2 then'Approve' 
+		  else 'Waiting For Approval'
+		  end),' Oleh: ',f4.vnip_qc,
+		  ' Pada: ',f4.tapp_qc
+		)
+ 	from plc2.plc2_upb_soi_fg f4 
+	where f4.iupb_id=ID and f4.itype=1 order by f4.isoi_id desc limit 1) as appsofgqcf,
+	
+	#SOI Mikro Final QA
+	(select
+		concat (
+		(case
+		  when f5.iappqa=1 then 'Reject'
+		  when f5.iappqa=2 then'Approve' 
+		  else 'Waiting For Approval'
+		  end),' Oleh: ',f5.vnip_qa,
+		  ' Pada: ',f5.tapp_qa
+		)
+ 	from plc2.plc2_upb_mikro_fg f5 
+	where f5.iupb_id=ID and f5.itype=1 order by f5.imikro_id desc limit 1) as appmikroqaf,
+	
+	#ambil id po dan id request sample
+	( select sm3.ireq_id from  plc2.plc2_upb_request_sample sm3 where
+		sm3.iupb_id =ID and ldeleted = 0   order by sm3.ireq_id desc limit 1
+	) as iReqid,
+	( select po1.ipo_id from plc2.plc2_upb_po_detail po1 where po1.ireq_id =
+		iReqid and ldeleted = 0  order by po1.ipo_id desc limit 1) as ID_PO,
+	
+	#Permintaan Sample
+	(select 
+		concat (
+				(case
+				  when rs.iapppd=1 then 'Reject'
+				  when rs.iapppd=2 then 'Approve' 
+				  end),' Oleh: ',rs.vnip_apppd,
+				  ' Pada: ',rs.tapppd
+			)
+		 from plc2_upb_request_sample rs 
+			where rs.ireq_id=iReqid) as appreqsample,
+		
+		#PO Sample
+		(select 
+					concat (
+								(case
+								  when po.iapppr=1 then 'Reject'
+								  when po.iapppr=2 then 'Approve' 
+								  end),' Oleh: ',po.vnip_pur,
+								  ' Pada: ',po.tapp_pur
+							)
+			 from plc2_upb_po po 
+				where 
+				po.ipo_id=ID_PO
+				)	as appro_pr,
+		
+		#Penerimaan Sample
+		(select 
+			concat (
+				(case
+				  when ro.iapppr=1 then 'Reject'
+				  when ro.iapppr=2 then 'Approve' 
+			   end),' Oleh: ',ro.vnip_pur,
+				' Pada: ',ro.tapp_pur
+				  ) 
+		   from plc_upb_ro ro 
+		  where 
+		 	 ro.iro_id=(select rod.iro_id from plc2_upb_ro_detail rod
+				where rod.ipo_id=ID_PO order by rod.ipo_id desc limit 1	
+										)					 
+								) as apprecv_pr,
+		
+		# PD Terima sample bahan baku
+		(select 
+	concat (
+		' Oleh: ',rod.vrec_nip_pd,
+		' Pada: ',rod.trec_date_pd
+		  ) 
+		from plc2.plc2_upb_ro_detail rod
+		where rod.ipo_id=ID_PO
+		order by rod.irodet_id desc limit 1				 
+		) as rec_pd,
+		
+		# QC Terima sample bahan baku
+	(select 
+	concat (
+		' Oleh: ',rod.vrec_nip_qc,
+		' Pada: ',rod.trec_date_qc
+		  ) 
+		from plc2.plc2_upb_ro_detail rod
+		where rod.ipo_id=ID_PO
+		order by rod.irodet_id desc limit 1				 
+		) as rec_qc,
+	
+		# QA Terima sample bahan baku
+	(select 
+	concat (
+		' Oleh: ',rod.vrec_nip_qa,
+		' Pada: ',rod.trec_date_qa
+		  ) 
+		from plc2.plc2_upb_ro_detail rod
+		where rod.ipo_id=ID_PO
+		order by rod.irodet_id desc limit 1				 
+		) as rec_qa,
+		
+		#PD App Analisa Sample Bahan Baku
+		(select 
+		concat (
+			(case
+			  when rod.iapppd_analisa=1 then 'Reject'
+			  when rod.iapppd_analisa=2 then 'Approve' 
+		   end),' Oleh: ',rod.vnip_apppd_analisa,
+			' Pada: ',rod.tapppd_analisa
+			  ) 
+			from plc2.plc2_upb_ro_detail rod
+			where rod.ipo_id=ID_PO	order by rod.irodet_id desc limit 1				 
+		  ) as apppd_analisa,
+		  
+		  #PD App KSK
+		 (select 
+			concat (
+				(case
+				  when rod.iappqa_ksk=1 then 'Reject'
+				  when rod.iappqa_ksk=2 then 'Approve' 
+			   end),' Oleh: ',rod.vnip_appqa_ksk,
+				' Pada: ',rod.tappqa_ksk
+				  ) 
+				from plc2.plc2_upb_ro_detail rod
+				where rod.ipo_id=ID_PO
+				order by rod.irodet_id desc limit 1				 
+			) as apppd_ksk,
+			
+	#App Basic Formula PD
+	(select
+		(case
+		  when fo.iapp_basic=1 then ' '
+		  when fo.iapp_basic=2 then (concat (' Oleh: ',ifnull(fo.vbasic_nip_apppd,'-'),
+		  ' Pada: ',ifnull(fo.tbasic_apppd,'-')))
+		  else '' 
+		  end)
+ 		from plc2.plc2_upb_formula fo 
+	where fo.ifor_id=FOR_ID) as appbasicpd,
+	
+	#App HPP PD
+	(select
+		(concat (' Oleh: ',ifnull(hp.vnip_apppd,'-'),
+			  ' Pada: ',ifnull(hp.tapppd,'-')))
+		 from plc2.plc2_hpp hp where hp.ifor_id=FOR_ID
+	 ) as apphpp_pd,
+	 
+	 #App HPP FA
+	 	(select
+		(concat (' Oleh: ',ifnull(hp.vnip_appfa,'-'),
+			  ' Pada: ',ifnull(hp.tappfa,'-')))
+	 from plc2.plc2_hpp hp where hp.ifor_id=FOR_ID
+	 ) as apphpp_fa,
+ 	
+ 		#App HPP BD
+	 	(select
+		(concat (' Oleh: ',ifnull(hp.vnip_appbd,'-'),
+			  ' Pada: ',ifnull(hp.tappbd,'-')))
+		 from plc2.plc2_hpp hp where hp.ifor_id=FOR_ID
+		 ) as apphpp_bd,
+  	
+  		#App HPP Dir
+	  (select
+			(concat (' Oleh: ',ifnull(hp.vnip_appdir,'-'),
+				  ' Pada: ',ifnull(hp.tappdir,'-')))
+		 from plc2.plc2_hpp hp where hp.ifor_id=FOR_ID
+		 ) as apphpp_dir,
+		 
+		 #Setting Prioritas Registrasi
+		(select 
+			concat (
+			(case
+			  when pr.iappbusdev=1 then 'Reject'
+			  when pr.iappbusdev=2 then'Approve'
+			  else 'Waiting For Approval' 
+			  end),' Oleh: ',pr.cnip,
+			  ' Pada: ', pr.tappbusdev
+		) 
+		from plc2.plc2_upb_prioritas_reg_detail prd 
+		inner join plc2.plc2_upb_prioritas_reg pr on pr.iprioritas_id=prd.iprioritas_id and pr.ldeleted=0
+		where  prd.iupb_id=ID and prd.ldeleted=0
+		order by pr.iyear desc limit 1
+		) as setprioreg_app,
+		
+		#Registrasi UPB Busdev App
+		concat (
+		(case
+		  when p.iappbusdev_registrasi=1 then 'Reject'
+		  when p.iappbusdev_registrasi=2 then'Approve'
+		  else 'Waiting For Approval' 
+		  end),' Oleh: ',p.vnip_appbusdev_registrasi,
+		  ' Pada: ', p.tappbusdev_registrasi
+		) as regapp_busdev,
+		
+		#Bahan Kemas Appp PD
+		(select 
+			concat (
+					(case
+					  when bk.iapppd=1 then 'Reject'
+					  when bk.iapppd=2 then 'Approve' 
+					  end),' Oleh: ',bk.vnip_apppd,
+					  ' Pada: ',bk.tapppd
+				)
+		 from plc2.plc2_upb_bahan_kemas bk 
+			where bk.iupb_id=ID
+			order by bk.ibk_id desc limit 1) as bkapp_pd,
+			
+		#Bahan Kemas Appp QA
+		(select 
+				concat (
+						(case
+						  when bk.iappqa=1 then 'Reject'
+						  when bk.iappqa=2 then 'Approve' 
+						  end),' Oleh: ',bk.vnip_appqa,
+						  ' Pada: ',bk.tappqa
+					)
+		 from plc2.plc2_upb_bahan_kemas bk 
+			where bk.iupb_id=ID
+			order by bk.ibk_id desc limit 1) as bkapp_qa,
+			
+		#Bahan Kemas Appp BD
+		(select 
+			concat (
+					(case
+					  when bk.iappbd=1 then 'Reject'
+					  when bk.iappbd=2 then 'Approve' 
+					  end),' Oleh: ',bk.vnip_appbd,
+					  ' Pada: ',bk.tappbd
+				)
+		 from plc2.plc2_upb_bahan_kemas bk 
+			where bk.iupb_id=ID
+			order by bk.ibk_id desc limit 1) as bkapp_bd,
+			
+		#Launching Produk APP BD
+		(select 
+		concat (
+				(case
+				  when bk.iappbd_launch=1 then 'Reject'
+				  when bk.iappbd_launch=2 then 'Approve' 
+				  end),' Oleh: ',bk.vnip_appbd_launch,
+				  ' Pada: ',bk.tappbd_launch
+			)
+		 from plc2.plc2_upb_bahan_kemas bk 
+			where bk.iupb_id=ID
+			order by bk.ibk_id desc limit 1) as launchapp_bd,
+		
+		#Launching Produk APP BD
+		(select 
+			concat (
+					(case
+					  when bk.iappdr_launch=1 then 'Reject'
+					  when bk.iappdr_launch=2 then 'Approve' 
+					  end),' Oleh: ',bk.vnip_appdr_launch,
+					  ' Pada: ',bk.tappdr_launch
+				)
+		 from plc2.plc2_upb_bahan_kemas bk 
+			where bk.iupb_id=ID
+			order by bk.ibk_id desc limit 1) as launchapp_dir	
+from
+	plc2.plc2_upb p
+WHERE p.ldeleted=0 AND p.ttanggal BETWEEN $P{tanggal1} AND $P{tanggal2}]]>
+	</queryString>
+	<field name="ID" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="upb_no" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="nama" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="Approval Busdev" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="Tanggal Approval" class="java.sql.Timestamp">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="NIP Approval" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="Approval Direksi" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="DR Tanggal Approval" class="java.sql.Timestamp">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="DR NIP Approval" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="App set prareg" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="prareg app" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tglOriBD" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tglOriPD" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tglOriAD" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tglOriQA" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appsfgpd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appsfgqa" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appsofgqa" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appsofgqc" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appmikroqa" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="FOR_ID" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appforpd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appstpd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="applabpd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="stab0" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="stab1" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="stab3" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="stab6" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appbestpd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appsfgpdf" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appsfgqaf" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appsofgqaf" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appsofgqcf" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appmikroqaf" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iReqid" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ID_PO" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appreqsample" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appro_pr" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="apprecv_pr" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="rec_pd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="rec_qc" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="rec_qa" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="apppd_analisa" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="apppd_ksk" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="appbasicpd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="apphpp_pd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="apphpp_fa" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="apphpp_bd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="apphpp_dir" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="setprioreg_app" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="regapp_busdev" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="bkapp_pd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="bkapp_qa" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="bkapp_bd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="launchapp_bd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="launchapp_dir" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="33" splitType="Stretch"/>
+	</title>
+	<columnHeader>
+		<band height="43" splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band height="53">
+			<subreport>
+				<reportElement x="106" y="0" width="200" height="53"/>
+				<subreportParameter name="ID">
+					<subreportParameterExpression><![CDATA[$F{ID}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "rpt_history_upb_all_pilot1.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+</jasperReport>

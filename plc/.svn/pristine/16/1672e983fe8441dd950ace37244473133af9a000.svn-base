@@ -1,0 +1,88 @@
+<?php 
+
+	
+	$url_detail = base_url()."processor/plc/v3/uji/mikro/bb/?action=getDetail";
+
+	if($act == 'create'){
+		$ret = '<div style="margin-left:20px;" id="detail_uji"> --';
+		$ret .= '</div>';
+		echo $ret;
+	}else{
+		$ireqdet_id = $_GET['id'];
+		$sql = 'select d3.vjenis_mikro
+                from plc2.plc2_upb_request_sample_detail a 
+                join plc2.plc2_upb_request_sample b on b.ireq_id=a.ireq_id
+                join plc2.plc2_raw_material c on c.raw_id=a.raw_id
+                join plc2.plc2_upb d on d.iupb_id=b.iupb_id
+                join plc2.plc2_upb_ro_detail d1 on d1.ireq_id = a.ireq_id and d1.raw_id = a.raw_id
+                join plc2.plc2_upb_po e on e.ipo_id = d1.ipo_id
+                join plc2.plc2_upb_ro f on f.iro_id = d1.iro_id
+                join plc2.plc2_upb_ro_detail_jenis d2 on d2.irodet_id=d1.irodet_id
+				join plc2.plc2_master_jenis_uji_mikro d3 on d3.ijenis_mikro=d2.ijenis_mikro
+				join plc2.uji_mikro_bb umb on umb.ireqdet_id=a.ireqdet_id
+                where a.ldeleted=0
+                and b.ldeleted=0
+                and c.ldeleted=0
+                and d.ldeleted=0
+                and d2.ldeleted=0
+                and d.ihold = 0
+                and d.iKill = 0
+                and d.itipe_id <> 6
+                and d1.ldeleted=0
+                and e.ldeleted=0
+                and f.ldeleted=0
+                and d1.iUjiMikro_bb = 1
+                and d1.trec_date_qa is not null
+                and umb.iuji_mikro_bb in ("'.$ireqdet_id.'")
+                #and a.ireqdet_id in ("1676")
+				';
+				//echo '<pre>'.$sql;
+
+        $datas= $this->db->query($sql)->result_array();
+
+		
+		$ret = '<div style="margin-left:20px;" id="detail_uji">';
+				if (empty($datas)) {
+					$ret ='Data tidak tersedia';	
+				}else{
+					$ret = "<ul>";
+						foreach ($datas as $data) {
+							$ret .= "<li>";
+								$ret .= $data['vjenis_mikro'];
+							$ret .= "</li>";
+						}
+					$ret .= "</ul>";
+				}
+
+
+		$ret .= '</div>';
+		
+		echo $ret;
+?>
+
+
+<?php 
+
+	}
+
+?>
+
+
+
+<script type="text/javascript">
+
+		$("#v3_uji_mikro_bb_ireqdet_id").die();
+		$("#v3_uji_mikro_bb_ireqdet_id").live('change',function(){
+			var ireqdet_id = $(this).val();
+			$.ajax({
+				url: "<?php echo $url_detail ?>",
+				type:"post",
+				data:"ireqdet_id="+ireqdet_id,
+				success: function(data) {
+					$("#detail_uji").html(data);
+				}
+			})
+
+		})
+
+	</script>

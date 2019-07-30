@@ -1,0 +1,48 @@
+<?php 
+	$grid=str_replace("_".$field, "", $id);
+    $iupb_id=isset($dataHead["iupb_id"])?$dataHead["iupb_id"]:"0";
+    $iappbusdev_registrasi=isset($dataHead["iappbusdev_registrasi"])?$dataHead["iappbusdev_registrasi"]:"0";
+    $iappbd_applet=isset($dataHead["iappbd_applet"])?$dataHead["iappbd_applet"]:"0";
+    $ireg_ulang=isset($dataHead["ireg_ulang"])?$dataHead["ireg_ulang"]:"";
+   
+    $get=$this->input->get();
+    /* echo $ireg_ulang.'.............'.$iappbusdev_registrasi.'.................';
+    exit; */
+    ?>
+
+
+    
+    <script>
+    
+    
+<?php
+    
+    
+       if($iupb_id!="0" && $iappbusdev_registrasi==2  && $ireg_ulang == 0 && $ireg_ulang <> "" ){?>
+            $("#<?php echo $id ?>").parent().parent().show();
+                 
+
+    <?php }else{ ?>
+        //$("#<?php echo $id ?>").parent().parent().hide();
+        $("#v3_reg_applet_tbayar_reg").parent().parent().next().next().next().next().next().hide();
+        //$("#v3_reg_applet_vnie").hide();
+
+    <?php }
+if ($iappbd_applet ==2 && $ireg_ulang == 0 && $ireg_ulang <> ""){ 
+        $arra=array(0=>"NIE",1=>"APPLET");
+        $value=isset($arra[$dataHead[$field]])?$arra[$dataHead[$field]]:"-";
+        ?>
+        $("#<?php echo $id; ?>").parent().html('<input type="text" class="input_rows1" readonly="readonly" size="15" value="<?php echo $value; ?>">');
+
+      <?php } ?>
+      $("#<?php echo $id ?>").change(function(){
+            var nilai="NIE";
+            if($(this).val()==1){
+                nilai="APPLET";
+            }
+            $("label[for='v3_reg_applet_form_detail_ttarget_noreg']").html("Tanggal "+nilai+"<span class='required_bintang'>*</span>");
+            $("label[for='v3_reg_applet_form_detail_vnie']").html("Nomor "+nilai+"<span class='required_bintang'>*</span>");
+            $("label[for='v3_reg_applet_form_detail_dRegistrasi_expired']").html("Tanggal "+nilai+" Expired <span class='required_bintang'>*</span>");
+            $("label[for='v3_reg_applet_form_detail_vfileregistrasi']").html("File "+nilai+"<span class='required_bintang'>*</span>");
+        });
+      </script>

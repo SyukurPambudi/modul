@@ -1,0 +1,28 @@
+<?php 
+	//echo $row_row_value.'oke';
+
+		$lmarketing = array(1=>'Semester 1', 2=>'Semester 2');
+        if ($act == 'view' || $act == 'update' ) {
+            $o = $lmarketing[$row_value];
+            $o .= '<input type="hidden" value="'.$row_value.'" name="'.$nmfield.'" id="'.$nmfield.'" >';
+            $o .= '<input type="hidden" name="isdraft" id="isdraft">';
+        } else {
+            $o  = "<select name='".$nmfield."' class='choose ".$field_required." ' id='".$nmfield."'>";            
+            foreach($lmarketing as $k=>$v) {
+                $o .= "<option  value='".$k."'>".$v."</option>";
+            }            
+            $o .= "</select>";
+            $o .= '<input type="hidden" name="isdraft" id="isdraft">';
+        }
+
+        $o .= '
+					<style>
+						#'.$nmfield.'{
+							min-width: 150px;
+						}
+					</style>
+					';
+
+		
+		echo $o;
+ ?>

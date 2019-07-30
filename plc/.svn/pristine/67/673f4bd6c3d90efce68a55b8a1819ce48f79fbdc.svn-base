@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="report_prareg_all_busdev1" language="groovy" pageWidth="802" pageHeight="555" orientation="Landscape" columnWidth="802" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+	<parameter name="imonth" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[1]]></defaultValueExpression>
+	</parameter>
+	<parameter name="iyear" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[2014]]></defaultValueExpression>
+	</parameter>
+	<parameter name="iteampd_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[1]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select prd.iupb_id, u.vupb_nomor, u.vupb_nama, u.vgenerik,
+	(select ku.vkategori from plc2.plc2_upb_master_kategori_upb ku where ku.ikategori_id=u.ikategoriupb_id) as kategupb,
+	case
+	 when u.iappbusdev_prareg=2 then 'Done'
+	 when u.iappbusdev_prareg=0 then 'On Progress'
+	 end as statusprareg
+ from plc2.plc2_upb_prioritas pr 
+	inner join plc2.plc2_upb_prioritas_detail prd on pr.iprioritas_id=prd.iprioritas_id and prd.ldeleted=0
+	inner join plc2.plc2_upb u on u.iupb_id=prd.iupb_id
+	where pr.imonth=$P{imonth} and pr.iyear=$P{iyear} and pr.iteambusdev_id=21 and pr.ldeleted=0 and prd.iteampd_id=$P{iteampd_id}]]>
+	</queryString>
+	<field name="iupb_id" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vupb_nomor" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vupb_nama" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vgenerik" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="kategupb" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="statusprareg" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<columnHeader>
+		<band height="13" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="0" width="90" height="13" backcolor="#6699FF"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="90" y="0" width="178" height="13" backcolor="#6699FF"/>
+			</rectangle>
+			<staticText>
+				<reportElement x="0" y="0" width="90" height="13"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[No. UPB]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="90" y="0" width="178" height="13"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Generik]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement x="268" y="0" width="220" height="13" backcolor="#6699FF"/>
+			</rectangle>
+			<staticText>
+				<reportElement x="268" y="0" width="220" height="13"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Usulan Nama Produk]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement x="488" y="0" width="68" height="13" backcolor="#6699FF"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="556" y="0" width="85" height="13" backcolor="#6699FF"/>
+			</rectangle>
+			<staticText>
+				<reportElement x="489" y="0" width="68" height="13"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Kategori UPB]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="557" y="0" width="84" height="13"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Status]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="18" splitType="Stretch">
+			<rectangle>
+				<reportElement x="556" y="0" width="85" height="18"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="488" y="0" width="68" height="18"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="268" y="0" width="220" height="18"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="0" y="0" width="90" height="18"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="90" y="0" width="178" height="18"/>
+			</rectangle>
+			<textField isBlankWhenNull="true">
+				<reportElement x="10" y="0" width="80" height="18"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{vupb_nomor}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="287" y="2" width="201" height="16"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{vupb_nama}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="102" y="2" width="166" height="16"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{vgenerik}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="501" y="2" width="55" height="16"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{kategupb}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="569" y="2" width="72" height="16"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{statusprareg}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

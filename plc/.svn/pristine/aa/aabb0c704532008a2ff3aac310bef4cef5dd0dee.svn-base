@@ -1,0 +1,45 @@
+<?php 
+	$grid = str_replace("_".$field, "", $id);
+    $isoibb_id = 0;
+    $query = $rowData['vSource_input'];
+    $union = '';
+    $existing = 0;
+
+    if (isset($dataHead)){
+        $isoibb_id = $dataHead['isoibb_id'];
+        $existing = $dataHead['iexisting'];
+    }
+
+    $field_id = $rowData['iM_modul_fileds'];
+?> 
+
+<script>
+    var idfield = "#<?php echo $grid; ?>_ineed_revisi";
+    var idexist = "#<?php echo $grid; ?>_iexisting";
+
+    $("#<?php echo $id ?>").change(function(){
+         $.ajax({
+            url: base_url+"processor/plc/v3/spesifikasi/soi/bb?action=getUPBfrom",
+            type: "post",
+            data : {
+                upb: $(this).val(),
+                id: "<?php echo $isoibb_id; ?>",
+                field: "<?php echo $field_id; ?>"
+            },
+            success: function(data) {
+                if (parseInt(data) == 1){
+                    $(idfield).removeAttr("value");
+                    // $(idfield).parent().parent().hide();
+                    $("label[for='v3_spesifikasi_soi_bb_form_detail_ineed_revisi']").parent().hide();
+                    $(idfield).removeClass("required error_text");
+                }else{
+                    // $(idfield).parent().parent().show();
+                    $("label[for='v3_spesifikasi_soi_bb_form_detail_ineed_revisi']").parent().show();
+                    $(idfield).addClass("required");
+                }
+                $(idexist).val(data);
+            }
+        });
+        
+    })
+</script>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="test_subreport3" language="groovy" pageWidth="802" pageHeight="555" orientation="Landscape" columnWidth="802" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+	<parameter name="iupb_id" class="java.lang.Integer"/>
+	<queryString>
+		<![CDATA[select msm.vdokumen as dokusm from plc2.plc2_upb_detail_dokumen_sm doksm 
+	inner join plc2.plc2_upb_master_dokumen_sm msm on msm.idoc_id=doksm.idoc_id
+where doksm.iupb_id=$P{iupb_id} and doksm.ldeleted=0]]>
+	</queryString>
+	<field name="dokusm" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<columnHeader>
+		<band height="21" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="3" width="330" height="18" backcolor="#6699FF"/>
+			</rectangle>
+			<staticText>
+				<reportElement x="0" y="0" width="330" height="19"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Dokumen]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="0" width="330" height="19"/>
+			</rectangle>
+			<textField>
+				<reportElement x="10" y="0" width="320" height="18"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{dokusm}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+</jasperReport>

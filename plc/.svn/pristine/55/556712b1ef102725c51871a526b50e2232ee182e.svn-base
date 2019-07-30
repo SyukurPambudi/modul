@@ -1,0 +1,1278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="test" language="groovy" pageWidth="595" pageHeight="1000" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
+	<parameter name="iupb_id" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[0]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select u.*, e.vName, k.vkategori, ku.vkategori as katupb, s.vsediaan,
+ (select te.vteam from plc2_upb_team te where te.iteam_id in (select tei.iteam_id from plc2_upb_team_item tei where tei.vnip=u.cnip) limit 1) as vteamm
+ ,
+ (case 
+  when u.itipe_id=1 then 'Local'
+  when u.itipe_id=2 then 'Import' 
+ else 'Export'
+ end) as tipe,
+ (case 
+  when u.ibe=1 then 'BE'
+  when u.ibe=2 then 'Non BE' 
+ end) as be,
+ ifnull(u.vhpp_target,'-') as hpp,
+ (case 
+  when u.ipatent=1 then 'Indonesia'
+  when u.ipatent=2 then 'Internasional' 
+ end) as patent,
+ case
+  when u.iteambusdev_id=0 then '-'
+  else (select vteam from plc2_upb_team where iteam_id=u.iteambusdev_id)
+ end as bd,
+ case
+  when u.iteampd_id=0 then '-'
+  else (select vteam from plc2_upb_team where iteam_id=u.iteampd_id)
+ end as pd,
+ case
+  when u.iteamqa_id=0 then '-'
+  else (select vteam from plc2_upb_team where iteam_id=u.iteamqa_id)
+ end as qa,
+ case
+  when u.iteamqc_id=0 then '-'
+  else (select vteam from plc2_upb_team where iteam_id=u.iteamqc_id)
+ end as qc,
+ case
+  when u.iteammarketing_id=0 then '-'
+  else (select vteam from plc2_upb_team where iteam_id=u.iteammarketing_id)
+ end as mk,
+ (case 
+  when u.iregister=3 then 'PT. NOVELL PHARMACEUTICAL LABORATORIES'
+  when u.iregister=5 then 'PT. ETERCON PHARMA' 
+ end) as reg,
+  (case 
+  when u.idevelop=3 then 'PT. NOVELL PHARMACEUTICAL LABORATORIES'
+  when u.idevelop=5 then 'PT. ETERCON PHARMA' 
+  when u.idevelop=100 then 'TOLL'
+ end) as dev,
+ (case 
+  when u.ihold=0 then 'Tidak'
+  when u.ihold=1 then 'Ya' 
+ end) as cancel,
+ case
+  when (select uap.iapprove from plc2_upb_approve uap 
+	where uap.iupb_id=$P{iupb_id} and uap.vmodule in ('AppUPB-BD','2507') and uap.vtipe='BD')=1 
+   then 'Reject'
+  when (select uap.iapprove from plc2_upb_approve uap 
+	where uap.iupb_id=$P{iupb_id} and uap.vmodule in ('AppUPB-BD','2507') and uap.vtipe='BD')=2 
+   then 'Approve'
+  else 'Waiting For Approval' 
+  end as iappbd,
+  (select uap.cnip from plc2_upb_approve uap 
+     where uap.iupb_id=$P{iupb_id} and uap.vmodule in ('AppUPB-BD','2507') and uap.vtipe='BD') as nipbd,
+   (select ee.vName from hrd.employee ee 
+	where ee.cNip in (select uap.cnip from plc2_upb_approve uap 
+     where uap.iupb_id=$P{iupb_id} and uap.vmodule in ('AppUPB-BD','2507') and uap.vtipe='BD')) as namabd,
+    (select uap.tupdate from plc2_upb_approve uap 
+     where uap.iupb_id=$P{iupb_id} and uap.vmodule in ('AppUPB-BD','2507') and uap.vtipe='BD') as tappbd,
+ case
+  when (select uap.iapprove from plc2_upb_approve uap 
+	where uap.iupb_id=$P{iupb_id} and uap.vmodule in ('AppUPB-DR','2507') and uap.vtipe='DR')=1 
+   then 'Reject'
+  when (select uap.iapprove from plc2_upb_approve uap 
+	where uap.iupb_id=$P{iupb_id} and uap.vmodule in ('AppUPB-DR','2507') and uap.vtipe='DR')=2 
+   then 'Approve'
+  else 'Waiting For Approval' 
+  end as iappdr,
+  (select uap.cnip from plc2_upb_approve uap 
+     where uap.iupb_id=$P{iupb_id} and uap.vmodule in ('AppUPB-DR','2507') and uap.vtipe='DR') as nipdr,
+   (select ee.vName from hrd.employee ee 
+	where ee.cNip in (select uap.cnip from plc2_upb_approve uap 
+     where uap.iupb_id=$P{iupb_id} and uap.vmodule in ('AppUPB-DR','2507') and uap.vtipe='DR')) as namadr,
+    (select uap.tupdate from plc2_upb_approve uap 
+     where uap.iupb_id=$P{iupb_id} and uap.vmodule in ('AppUPB-DR','2507') and uap.vtipe='DR') as tappdr
+from plc2_upb u 
+	inner join hrd.employee e on e.cNip=u.cnip
+        left join hrd.mnf_kategori k on k.ikategori_id=u.ikategori_id
+	left join plc2_upb_master_kategori_upb ku on ku.ikategori_id=ikategoriupb_id
+	left join hrd.mnf_sediaan s on s.isediaan_id=u.isediaan_id 
+where u.iupb_id = $P{iupb_id}]]>
+	</queryString>
+	<field name="iupb_id" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vupb_nomor" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vupb_nama" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="cnip" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ttanggal" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tunique" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tpacking" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ikategori_id" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ikategoriupb_id" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="isediaan_id" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ipatent" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tinfo_paten" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="patent_year" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ibe" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iuji_mikro" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ipublish" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iappdireksi" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iappbusdev_prareg" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tappbusdev_prareg" class="java.sql.Timestamp">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tappbusdev_registrasi" class="java.sql.Timestamp">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vnip_appbusdev_prareg" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iappbusdev_registrasi" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vnip_appbusdev_registrasi" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iappdireksi_prareg" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iappdireksi_registrasi" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vnip_kirim_sample" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vnip_terima_sample" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tkirim_sample" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tterima_sample" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tterima_sample_i" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iavailability_raw" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="itipe_id" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="idivid" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="voriginator" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="voriginator_price" class="java.lang.Float">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="voriginator_kemas" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vgenerik" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tindikasi" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vhpp_target" class="java.lang.Float">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iregister" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="idevelop" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vdevelop" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="pic_produksi" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iteambusdev_id" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iteampd_id" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iteamqa_id" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iteamqc_id" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iteammarketing_id" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iappmarketing" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iappbusdev" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tmemo_datex" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tmemox" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="fmemolaunchingfilex" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tmemo_busdev" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iprioritas" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="irequest" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="isample" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ipraregistrasi" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="icheck_praregistrasi" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iregistrasi" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="icheck_registrasi" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ikesesuaian" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ttarget_prareg" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tsubmit_prareg" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ttarget_hpr" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tterima_hpr" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="icap_lengkap" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="icap_lengkap_prareg" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="dcap_lengkap" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="dcap_lengkap_prareg" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="dmulai_reg" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tspb" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ttarget_reg" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tsubmit_reg" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ttarget_noreg" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tterima_noreg" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tbayar_reg" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="trealisasi_no" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vnoreg" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vfileregistrasi" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tterimabb_date" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tterimabk_datex" class="java.sql.Date">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ispekpd" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ispekqc" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ispekqa" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="isoipd" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="isoiqc" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="isoiqa" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="imoapd" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="imoaqc" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="imoaqa" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="imikpd" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="imikqc" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="imikqa" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="istatus" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ihpp" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="isucced6" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ilaunch" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ilaunch_mr" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ilaunch_dr" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ihold" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iholddate" class="java.sql.Timestamp">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="ldeleted" class="java.lang.Boolean">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="FLAG" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="C_USERID" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="C_DIVISI" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tlast_conversion" class="java.sql.Timestamp">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="txtDocBB" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="txtDocSM" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="isOldVersion" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iCompanyId" class="java.lang.Integer">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vName" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vkategori" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="katupb" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vsediaan" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="vteamm" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tipe" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="be" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="hpp" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="patent" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="bd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="pd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="qa" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="qc" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="mk" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="reg" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="dev" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="cancel" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iappbd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="nipbd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="namabd" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tappbd" class="java.sql.Timestamp">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="iappdr" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="nipdr" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="namadr" class="java.lang.String">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<field name="tappdr" class="java.sql.Timestamp">
+		<fieldDescription><![CDATA[]]></fieldDescription>
+	</field>
+	<group name="group1">
+		<groupExpression><![CDATA[$F{iupb_id}]]></groupExpression>
+		<groupHeader>
+			<band height="281">
+				<staticText>
+					<reportElement x="0" y="40" width="100" height="18"/>
+					<textElement/>
+					<text><![CDATA[Nama Generic]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="78" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Pengusul]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="111" y="41" width="277" height="18"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{vgenerik}]]></textFieldExpression>
+				</textField>
+				<textField pattern="" isBlankWhenNull="true">
+					<reportElement x="111" y="77" width="64" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{cnip}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="185" y="78" width="235" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{vName}]]></textFieldExpression>
+				</textField>
+				<rectangle>
+					<reportElement x="0" y="98" width="555" height="20" backcolor="#CCCCCC"/>
+					<graphicElement>
+						<pen lineWidth="0.0"/>
+					</graphicElement>
+				</rectangle>
+				<staticText>
+					<reportElement x="0" y="118" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Harga Originator]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="158" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Kategori Produk]]></text>
+				</staticText>
+				<rectangle>
+					<reportElement x="0" y="178" width="555" height="20" backcolor="#CCCCCC"/>
+					<graphicElement>
+						<pen lineWidth="0.0"/>
+					</graphicElement>
+				</rectangle>
+				<staticText>
+					<reportElement x="0" y="198" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Sedian Produk]]></text>
+				</staticText>
+				<rectangle>
+					<reportElement x="0" y="218" width="555" height="20" backcolor="#CCCCCC"/>
+					<graphicElement>
+						<pen lineWidth="0.0"/>
+					</graphicElement>
+				</rectangle>
+				<staticText>
+					<reportElement x="0" y="238" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Type BE]]></text>
+				</staticText>
+				<rectangle>
+					<reportElement x="0" y="258" width="555" height="20" backcolor="#CCCCCC"/>
+					<graphicElement>
+						<pen lineWidth="0.0"/>
+					</graphicElement>
+				</rectangle>
+				<staticText>
+					<reportElement x="0" y="0" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[No . UPB]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="111" y="0" width="100" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{vupb_nomor}]]></textFieldExpression>
+				</textField>
+				<rectangle>
+					<reportElement x="0" y="58" width="555" height="20" backcolor="#CCCCCC"/>
+					<graphicElement>
+						<pen lineWidth="0.0"/>
+					</graphicElement>
+				</rectangle>
+				<staticText>
+					<reportElement x="0" y="58" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Tanggal]]></text>
+				</staticText>
+				<textField pattern="MMMMM dd, yyyy">
+					<reportElement x="111" y="58" width="100" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.util.Date"><![CDATA[$F{ttanggal}]]></textFieldExpression>
+				</textField>
+				<rectangle>
+					<reportElement x="0" y="20" width="555" height="20" backcolor="#CCCCCC"/>
+					<graphicElement>
+						<pen lineWidth="0.0"/>
+					</graphicElement>
+				</rectangle>
+				<staticText>
+					<reportElement x="0" y="20" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Nama Usulan]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="111" y="20" width="277" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{vupb_nama}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="0" y="98" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Originator]]></text>
+				</staticText>
+				<rectangle>
+					<reportElement x="0" y="138" width="555" height="20" backcolor="#CCCCCC"/>
+					<graphicElement>
+						<pen lineWidth="0.0"/>
+					</graphicElement>
+				</rectangle>
+				<staticText>
+					<reportElement x="0" y="138" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Kemasan Originator]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="178" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Kategori UPB]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="218" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Type Produk]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="258" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Target HPP]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="111" y="98" width="277" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{voriginator}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="118" width="100" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.Float"><![CDATA[$F{voriginator_price}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="138" width="277" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{voriginator_kemas}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="158" width="100" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{vkategori}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="178" width="100" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{katupb}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="198" width="444" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{vsediaan}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="218" width="100" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{tipe}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="238" width="100" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{be}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="258" width="100" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{hpp}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="100" y="0" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="20" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="40" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="59" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="79" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="99" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="118" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="138" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="158" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="178" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="198" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="218" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="238" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="258" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="175" y="77" width="10" height="20"/>
+					<textElement/>
+					<text><![CDATA[|]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="420" y="79" width="10" height="20"/>
+					<textElement/>
+					<text><![CDATA[|]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="430" y="79" width="100" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{vteamm}]]></textFieldExpression>
+				</textField>
+			</band>
+			<band height="130">
+				<staticText>
+					<reportElement x="0" y="2" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Keunggulan Produk ]]></text>
+				</staticText>
+				<textField>
+					<reportElement stretchType="RelativeToBandHeight" x="111" y="0" width="444" height="119"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{tunique}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="100" y="2" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+			</band>
+			<band height="282">
+				<rectangle>
+					<reportElement x="0" y="0" width="555" height="20" backcolor="#CCCCCC"/>
+					<graphicElement>
+						<pen lineWidth="0.0"/>
+					</graphicElement>
+				</rectangle>
+				<rectangle>
+					<reportElement x="0" y="39" width="555" height="20" backcolor="#CCCCCC"/>
+					<graphicElement>
+						<pen lineWidth="0.0"/>
+					</graphicElement>
+				</rectangle>
+				<staticText>
+					<reportElement x="0" y="59" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Informasi Hak Patent ]]></text>
+				</staticText>
+				<rectangle>
+					<reportElement x="0" y="79" width="555" height="20" backcolor="#CCCCCC"/>
+					<graphicElement>
+						<pen lineWidth="0.0"/>
+					</graphicElement>
+				</rectangle>
+				<staticText>
+					<reportElement x="0" y="99" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Team Busdev ]]></text>
+				</staticText>
+				<rectangle>
+					<reportElement x="0" y="119" width="555" height="20" backcolor="#CCCCCC"/>
+					<graphicElement>
+						<pen lineWidth="0.0"/>
+					</graphicElement>
+				</rectangle>
+				<rectangle>
+					<reportElement x="0" y="159" width="555" height="20" backcolor="#CCCCCC"/>
+					<graphicElement>
+						<pen lineWidth="0.0"/>
+					</graphicElement>
+				</rectangle>
+				<staticText>
+					<reportElement x="0" y="179" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Team Marketing]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="219" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Produksi oleh ]]></text>
+				</staticText>
+				<rectangle>
+					<reportElement x="0" y="239" width="555" height="20" backcolor="#CCCCCC"/>
+					<graphicElement>
+						<pen lineWidth="0.0"/>
+					</graphicElement>
+				</rectangle>
+				<staticText>
+					<reportElement x="0" y="139" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Team QA]]></text>
+				</staticText>
+				<rectangle>
+					<reportElement x="0" y="199" width="555" height="20" backcolor="#CCCCCC"/>
+					<graphicElement>
+						<pen lineWidth="0.0"/>
+					</graphicElement>
+				</rectangle>
+				<staticText>
+					<reportElement x="0" y="0" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Spesifikasi Kemasan ]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="39" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Tipe Hak Patent ]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="79" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Patent Exp. ]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="119" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Team PD]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="159" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Team QC]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="199" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Registrasi Untuk ]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="239" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Catatan Busdev ]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="111" y="19" width="100" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.util.Date"><![CDATA[$F{ttarget_prareg}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="100" y="0" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="19" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="39" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="59" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="79" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="99" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="119" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="139" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="159" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="179" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="199" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="219" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="239" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="111" y="39" width="100" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{patent}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="59" width="100" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{tinfo_paten}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="79" width="100" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{patent_year}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="99" width="444" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{bd}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="119" width="358" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{pd}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="139" width="434" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{qa}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="159" width="382" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{qc}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="179" width="444" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{mk}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="199" width="434" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{reg}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="219" width="434" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{dev}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="111" y="239" width="434" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{tmemo_busdev}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="0" y="258" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Cancel UPB ]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="259" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="111" y="258" width="100" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{cancel}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="0" y="19" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Estimasi Praregistrasi ]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="111" y="0" width="444" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{tpacking}]]></textFieldExpression>
+				</textField>
+			</band>
+			<band height="28">
+				<staticText>
+					<reportElement x="0" y="1" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Dok. Bahan Baku]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="1" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<subreport isUsingCache="true">
+					<reportElement x="111" y="1" width="434" height="20"/>
+					<subreportParameter name="SUBREPORT_DIR">
+						<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="iupb_id">
+						<subreportParameterExpression><![CDATA[$F{iupb_id}]]></subreportParameterExpression>
+					</subreportParameter>
+					<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "test_subreport2.jasper"]]></subreportExpression>
+				</subreport>
+				<break>
+					<reportElement x="0" y="27" width="100" height="1"/>
+				</break>
+			</band>
+			<band height="24">
+				<staticText>
+					<reportElement x="0" y="0" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Dok. Standar Mutu]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="0" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<subreport>
+					<reportElement x="111" y="0" width="434" height="20"/>
+					<subreportParameter name="SUBREPORT_DIR">
+						<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="iupb_id">
+						<subreportParameterExpression><![CDATA[$P{iupb_id}]]></subreportParameterExpression>
+					</subreportParameter>
+					<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "test_subreport3.jasper"]]></subreportExpression>
+				</subreport>
+			</band>
+			<band height="24">
+				<staticText>
+					<reportElement x="0" y="0" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Komposisi Originator]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="0" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<subreport runToBottom="true">
+					<reportElement x="111" y="1" width="434" height="19"/>
+					<subreportParameter name="SUBREPORT_DIR">
+						<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="iupb_id">
+						<subreportParameterExpression><![CDATA[$F{iupb_id}]]></subreportParameterExpression>
+					</subreportParameter>
+					<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "test_subreport.jasper"]]></subreportExpression>
+				</subreport>
+			</band>
+			<band height="29">
+				<subreport>
+					<reportElement x="111" y="2" width="434" height="18"/>
+					<subreportParameter name="SUBREPORT_DIR">
+						<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="iupb_id">
+						<subreportParameterExpression><![CDATA[$P{iupb_id}]]></subreportParameterExpression>
+					</subreportParameter>
+					<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					<subreportExpression class="java.lang.String"><![CDATA[$P{SUBREPORT_DIR} + "test_subreport4.jasper"]]></subreportExpression>
+				</subreport>
+				<staticText>
+					<reportElement x="100" y="0" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="0" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Marketing Forecast]]></text>
+				</staticText>
+			</band>
+			<band height="43">
+				<staticText>
+					<reportElement x="0" y="0" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Approval Busdev]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="0" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="111" y="0" width="53" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{iappbd}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="164" y="0" width="37" height="20"/>
+					<textElement/>
+					<text><![CDATA[oleh :]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="202" y="0" width="166" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{namabd}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="368" y="0" width="12" height="20"/>
+					<textElement/>
+					<text><![CDATA[|]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="380" y="0" width="49" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{nipbd}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="111" y="20" width="41" height="20"/>
+					<textElement/>
+					<text><![CDATA[Pada : ]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="152" y="20" width="124" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.sql.Timestamp"><![CDATA[$F{tappbd}]]></textFieldExpression>
+				</textField>
+			</band>
+			<band height="50">
+				<staticText>
+					<reportElement x="368" y="0" width="12" height="20"/>
+					<textElement/>
+					<text><![CDATA[|]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="0" width="100" height="20"/>
+					<textElement/>
+					<text><![CDATA[Approval Direksi]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="100" y="0" width="11" height="20"/>
+					<textElement/>
+					<text><![CDATA[:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="164" y="0" width="37" height="20"/>
+					<textElement/>
+					<text><![CDATA[oleh :]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="111" y="20" width="41" height="20"/>
+					<textElement/>
+					<text><![CDATA[Pada : ]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="111" y="0" width="53" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{iappdr}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="201" y="0" width="167" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{namadr}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="380" y="0" width="49" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{nipdr}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="152" y="20" width="124" height="20"/>
+					<textElement/>
+					<textFieldExpression class="java.sql.Timestamp"><![CDATA[$F{tappdr}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="34" splitType="Stretch">
+			<staticText>
+				<reportElement x="136" y="0" width="268" height="20"/>
+				<textElement textAlignment="Center">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Report Detail Usulan Produk Baru]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="2" splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band height="1" splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band splitType="Stretch"/>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band height="7" splitType="Stretch"/>
+	</pageFooter>
+	<summary>
+		<band height="5" splitType="Stretch"/>
+	</summary>
+</jasperReport>

@@ -1,0 +1,8 @@
+<script>
+    $("#<?php echo $id ?>").change(function(){
+        var valu =  $("#<?php echo $id ?>").val();
+        jQuery("#tb_details_plc2_v3_prareg_hpr_fileDokPrareg_fileDokPrareg").jqGrid('setGridParam', { 
+            postData: { id: valu }
+            }).trigger('reloadGrid');
+    });
+</script>

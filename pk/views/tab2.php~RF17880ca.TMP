@@ -1,0 +1,195 @@
+ini tab 2
+<?php 
+//echo $team_id.'ini teamnya';
+		$o='';
+			
+			// Get Team 
+		
+			$sql_tim ='select a.vteam,iteam_id from plc2.plc2_upb_team a where a.ldeleted=0 and a.iteam_id in ("'.$team_id.'")';
+			$qteam = $this->db->query($sql_tim)->row_array();
+			$itim= $qteam['iteam_id'];
+
+			/*
+			$iDeptID='';
+			$value = 'GA';
+			$sql_dept = "SELECT iDivID FROM hrd.msdivision
+						WHERE ( vAbbreviation LIKE '%".$value."%' OR vAbbreviation LIKE '%".$value."%' )
+						AND lDeleted = 0 ORDER BY iDivID LIMIT 1";
+			$query = $this->db->query($sql_dept);
+			if($query->num_rows()>0) {
+				$row = $query->row_array();
+				$iDeptID = $row['iDivID'];
+			}
+			*/
+			// get parameter PK Busdev
+			$sqlp ='select * from plc2.pk_parameter a where a.ldeleted=0 and a.ikategori_id=2 and a.iteam_id ="'.$itim.'" ';
+			$queryp = $this->db->query($sqlp);
+		
+
+		if($queryp->num_rows()>0) {
+			$rows = $queryp->result_array();
+			
+			$o = '<div id="target_'.$id.'"><table border="1" rules="all" cellspacing="0" cellpadding="2">';
+			$nomor=1;
+			foreach($rows as $key => $row) {
+				$vFunction = $row['vFunction'];
+				$parameter = $row['parameter'];
+				$iparameter_id=$row['iparameter_id'];
+				$o.='<tr><th>'.$nomor.'</th><th>'.$parameter.'</th></tr>';
+				
+				$sqlpd = "select * from plc2.pk_parameter_detail a where a.ldeleted=0 and a.iparameter_id='".$iparameter_id."' ";
+				$querypd = $this->db->query($sqlpd);
+				if($querypd->num_rows()>0) {
+					$rows_ = $querypd->result_array();
+					$btnHitung = '<div><span></span><br/><a href="javascript:void(0);" onclick="calculate_all_rincian_hitung($(this),\''.$vFunction.'\',\''.$iparameter_id.'\');">Hitung</a><p style="display:none;">Loading...</p></div>';
+					$curr_score = '';
+					
+					
+					$o.='<tr bgcolor="#FFFFFF"><td></td><td style="margin:0;padding:0"><table width="100%" height="100%" cellspacing="0" cellpadding="2">';
+					
+					foreach($rows_ as $key_ =>$row_) {
+						$deskripsi = $row_['deskripsi'];
+						$poin = $row_['poin'];
+						$bgcolor = ($key_%2)?'#EFEFEF':'';
+						
+						$highlight = ($curr_score==$poin)?'color:#FFF;background:blue;':'';
+						
+						$o.='<tr bgcolor="'.$bgcolor.'" style="'.$highlight.'"><td width="80%">'.$deskripsi.'</td><td align="right" class="lbl_'.$poin.'">'.$poin.'</td></tr>';
+					}
+					
+					$o.='</table></td><td>'.$btnHitung.' ';
+					$o.='</td></tr>';
+				}
+			$nomor++;	
+			}
+			$o.= '</table></div>';
+			
+			$o.= '<script type="text/javascript">';
+			$o.= 'function calculate_all_rincian_hitung(o, vFunction,iparameter_id) {
+					var url = "'.base_url().'processor/pk/pk_busdev?action=calculate_all_rincian_hitung";
+					var date1 = $("#calculate_all_cPeriode_1").val();
+					var date2 = $("#calculate_all_cPeriode_2").val();
+					var periode = $("#calculate_all_cPeriode").val();
+					var loading = o.parent().find("p");
+
+					if( date1 == \'\' || date2 == \'\'  || periode == \'\' ) 
+					{
+						alert("Periode cannot empty!");
+						return false;
+					}
+					
+					o.hide();
+					loading.show();
+					
+					o.closest("tr").find("tr").css({"background":"transparent","color":"#000"});
+					
+					$.ajax({
+						url: url,
+						data: { vFunction:vFunction, date1:date1, date2:date2, periode:periode },
+						type: "post",
+						dataType: "json",
+						success: function(data) {
+							o.show();
+							loading.hide();
+							
+							if(!data.error) {
+								var fldParameter = 	$(\'<input>\').attr({
+													    type: \'hidden\',
+													    id: \'parameter_\'+iparameter_id,
+													    name: \'iparameter_id[]\',
+													    value: iparameter_id
+													});
+
+								var fldHasil = 	$(\'<input>\').attr({
+													    type: \'hidden\',
+													    id: \'hasil_\'+iparameter_id,
+													    name: \'hasil_calc[]\',
+													    value: data.hasil
+													});
+								var fldScore = 	$(\'<input>\').attr({
+													    type: \'hidden\',
+													    id: \'poin_\'+iparameter_id,
+													    name: \'poin[]\',
+													    value: data.score
+													});
+								var z = o.closest("tr").find(".lbl_"+data.score);
+								z.parent().css({"background":"blue","color":"#fff"});
+								o.parent().find("span").text( data.hasil );
+								o.parent().find("span").append( fldParameter ).append( fldHasil ).append(fldScore);
+							} else {
+								alert( data.message );
+							}
+							
+						}
+					});
+				  }';
+			$o.= '</script>';
+		}
+		echo $o;
+		
+ ?>		
+ <div>
+	<button type="button" id="submit_draft_tab2" class="ui-button-text icon-save ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-primary">Save as Draft</button>
+	<button type="button" id="submit_lap_qa_print" class="ui-button-text icon-save ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-primary">Save & Submit</button>
+</div>
+
+
+<?php 
+	$url_base = base_url()."processor/pk/pk_busdev?action=pos_calc"; 
+ ?>
+<script type="text/javascript">
+	$('#submit_draft_tab2').die();
+	$('#submit_draft_tab2').live('click', function(){
+		alert("alooohaaa");
+		/*
+		var tglAwal = $('#tglAwal').val();
+		var tglAkhir = $('#tglAkhir').val();
+		var kodeObat = $('#kodeObat').val();
+		var jenis_qa = $('#lqa_jenis_qa').val();
+		var kategori = $('#lqa_kategori').val();
+		if($('#tglAwal').val() == '') {
+			custom_alert3('Pilih Tanggal awal !','',$('#tglAwal'));
+			return false;
+		}
+		if($('#tglAkhir').val() == '') {
+			custom_alert3('Pilih Tanggal akhir!','',$('#tglAkhir'));
+			return false;
+		}
+		if($('#jenis_qa').val() == '') {
+			custom_alert3('Jenis QA !','',$('#jenis_qa'));
+			return false;
+		}
+
+
+		if($('#lqa_kategori').val() == '') {
+			custom_alert3('Pilih Kategori !','',$('#lqa_kategori'));
+			return false;
+		}
+		if($('#kodeObat').val() == '') {
+			custom_alert3('Pilih Produk !','',$('#kodeObat'));
+			return false;
+		}
+		
+		
+		if(tglAkhir < tglAwal) {
+			custom_alert3('Tanggal Awal harus lebih besar dari Tanggal Akhir!','',$('#tglAkhir'));
+			return false;
+		}
+		*/
+
+		return $.ajax({
+			url: '<?php $url_base ?>',
+			type: 'post',
+			data: data: $('#target_pk_busdev_lbldes'+grid).serialize(),,
+			beforeSend: function() {
+				$('#content_general_report').html('<img src="'+loading_image_login+'" />');
+
+			},
+			success: function(res) {
+				$('#content_general_report').html(res);
+			}
+		}).responseText;
+		
+	});
+
+</script>
